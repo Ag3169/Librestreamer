@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}LibreStreamer &middot; Player{% endblock %}
+{% block content %}
+<section class="player-wrap">
+  <a href="/item/{{ item['id'] }}" class="back">&larr; Back</a>
+  <h1>{{ item['title'] }}</h1>
+  <div class="player-box">
+    {% if item['type'] == 'music' %}
+    <audio id="player" controls autoplay src="/api/stream/{{ item['id'] }}"></audio>
+    {% else %}
+    <video id="player" controls autoplay>
+      <source src="/api/stream/{{ item['id'] }}" type="{{ item['mime_type'] or 'video/mp4' }}">
+    </video>
+    {% endif %}
+  </div>
+  <div id="stream-status" class="stream-status"></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>
+  (function(){
+    const p = document.getElementById('player');
+    const s = document.getElementById('stream-status');
+    const itemId = {{ item['id']|tojson }};
+    let lastReport = 0;
+    if (!p) return;
+    function report(finished) {
+      const now = Date.now();
+      if (!finished && now - lastReport < 5000) return;
+      lastReport = now;
+      fetch('/api/progress', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          item_id: itemId,
+          position: Math.floor(p.currentTime || 0),
+          duration: Math.floor(p.duration || 0),
+          finished: finished || false,
+        })
+      });
+    }
+    p.addEventListener('timeupdate', () => report(false));
+    p.addEventListener('ended', () => report(true));
+    p.addEventListener('pause', () => report(false));
+    p.addEventListener('error', () => { if(s) s.textContent = 'Stream error'; });
+    p.addEventListener('playing', () => { if(s) s.textContent = 'Playing'; });
+    p.addEventListener('waiting', () => { if(s) s.textContent = 'Buffering...'; });
+  })();
+</script>
+{% endblock %}

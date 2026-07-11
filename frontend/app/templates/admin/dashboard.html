@@ -1,0 +1,156 @@
+{% extends "admin/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+
+<div class="stat-cards">
+  <div class="stat-card"><div class="stat-num">{{ item_count }}</div><div class="stat-label">Media Items</div></div>
+  <div class="stat-card"><div class="stat-num">{{ total_backends }}</div><div class="stat-label">Backends</div></div>
+  <div class="stat-card"><div class="stat-num">{{ healthy_count }}</div><div class="stat-label">Healthy</div></div>
+  <div class="stat-card"><div class="stat-num">{{ active_sessions }}</div><div class="stat-label">Active Streams</div></div>
+</div>
+
+<div class="dash-controls">
+  <button id="refresh-btn" class="btn btn-primary">Refresh Library</button>
+  <button id="auto-refresh-toggle" class="btn">Auto-Refresh: <span id="ar-status">Off</span></button>
+  <label class="switch-label">
+    <input type="checkbox" id="lb-toggle" {{ 'checked' if auto_load_balance else '' }}>
+    <span>Auto Load Balance</span>
+  </label>
+</div>
+
+<h2>Backend Status</h2>
+<div class="backend-grid" id="backend-grid">
+  {% for b in backends %}
+  <div class="backend admin-backend" data-name="{{ b.name }}">
+    <div class="bname">
+      <span class="dot {{ 'ok' if b.healthy else 'bad' }}"></span>
+      {{ b.name }}
+      {% if not b.enabled %}<span class="badge badge-off">Disabled</span>{% endif %}
+    </div>
+    <div class="bkind">{{ b.type }} | Priority {{ b.priority }} | Max {{ b.max_streams }} streams</div>
+    {% if b.cpu_usage_pct >= 0 %}
+    <div class="bmetric"><span>CPU</span><span>{{ '%.0f'|format(b.cpu_usage_pct) }}%</span></div>
+    <div class="bar"><span style="width:{{ b.cpu_usage_pct }}%"></span></div>
+    {% endif %}
+    {% if b.memory_usage_pct >= 0 %}
+    <div class="bmetric"><span>RAM</span><span>{{ '%.0f'|format(b.memory_usage_pct) }}%</span></div>
+    <div class="bar"><span style="width:{{ b.memory_usage_pct }}%"></span></div>
+    {% endif %}
+    {% if b.gpu_usage_pct >= 0 %}
+    <div class="bmetric"><span>GPU ({{ b.gpu_name }})</span><span>{{ '%.0f'|format(b.gpu_usage_pct) }}%</span></div>
+    <div class="bar"><span style="width:{{ b.gpu_usage_pct }}%"></span></div>
+    {% endif %}
+    {% if b.disk_usage_pct >= 0 %}
+    <div class="bmetric"><span>Disk</span><span>{{ '%.0f'|format(b.disk_usage_pct) }}%</span></div>
+    <div class="bar"><span style="width:{{ b.disk_usage_pct }}%"></span></div>
+    {% endif %}
+    <div class="bmetric">
+      <span>Streams</span><span>{{ b.active_streams }} / {{ b.max_streams }}</span>
+    </div>
+    <div class="bmetric"><span>Score</span><span>{{ '%.2f'|format(b.score) }}</span></div>
+    {% if b.last_seen_ago >= 0 %}
+    <div class="bmetric"><span>Last seen</span><span>{{ '%.0f'|format(b.last_seen_ago) }}s ago</span></div>
+    {% endif %}
+    <canvas class="mini-chart" data-backend="{{ b.name }}" width="280" height="60"></canvas>
+  </div>
+  {% endfor %}
+</div>
+
+<h2>Media by Type</h2>
+<div class="stat-cards">
+  {% for t, c in type_counts.items() %}
+  <div class="stat-card"><div class="stat-num">{{ c }}</div><div class="stat-label">{{ t|capitalize }}</div></div>
+  {% endfor %}
+</div>
+
+<h2>Quick Actions</h2>
+<div class="quick-actions">
+  <a href="/admin/upload"><button class="btn">Upload Media</button></a>
+  <a href="/admin/servers"><button class="btn">Manage Servers</button></a>
+  <a href="/admin/libraries"><button class="btn">Libraries</button></a>
+  <a href="/admin/users"><button class="btn">Users</button></a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Refresh library
+document.getElementById('refresh-btn').addEventListener('click', async function() {
+  this.textContent = 'Refreshing...';
+  try {
+    const r = await fetch('/api/refresh', {method: 'POST'});
+    const d = await r.json();
+    this.textContent = 'Done: ' + d.items + ' items';
+    setTimeout(() => location.reload(), 1000);
+  } catch(e) {
+    this.textContent = 'Error: ' + e.message;
+  }
+});
+
+// Auto load balance toggle
+document.getElementById('lb-toggle').addEventListener('change', async function() {
+  try {
+    await fetch('/api/admin/balancer/toggle', {method: 'POST'});
+    toast('Load balance mode updated');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+});
+
+// Auto refresh
+let arInterval = null;
+document.getElementById('auto-refresh-toggle').addEventListener('click', function() {
+  if (arInterval) {
+    clearInterval(arInterval);
+    arInterval = null;
+    document.getElementById('ar-status').textContent = 'Off';
+  } else {
+    arInterval = setInterval(() => location.reload(), 10000);
+    document.getElementById('ar-status').textContent = '10s';
+  }
+});
+
+// Mini charts
+document.querySelectorAll('.mini-chart').forEach(async function(canvas) {
+  const name = canvas.dataset.backend;
+  try {
+    const r = await fetch('/api/admin/metrics/' + encodeURIComponent(name) + '?limit=30');
+    const d = await r.json();
+    if (!d.points || d.points.length < 2) return;
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    const pts = d.points.reverse();
+    const cpu = pts.map(p => p.cpu_usage || 0);
+    const mem = pts.map(p => p.memory_usage || 0);
+    const maxV = 100;
+    ctx.clearRect(0, 0, w, h);
+
+    function drawLine(data, color) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      for (let i = 0; i < data.length; i++) {
+        const x = (i / (data.length - 1)) * w;
+        const y = h - (Math.min(data[i], maxV) / maxV) * h;
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    drawLine(cpu, '#4a9');
+    drawLine(mem, '#e80');
+    if (pts[0].gpu_usage !== undefined) {
+      const gpu = pts.map(p => p.gpu_usage || 0);
+      drawLine(gpu, '#a4a');
+    }
+  } catch(e) {}
+});
+
+// Toast
+function toast(msg, type) {
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type || 'ok');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+</script>
+{% endblock %}

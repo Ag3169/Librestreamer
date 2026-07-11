@@ -1,0 +1,59 @@
+:root{--bg:#0f0f0f;--bg-2:#181818;--card:#202020;--card-hover:#2a2a2a;--text:#f2f2f2;--muted:#9aa0a6;--accent:#00a4dc;--accent-2:#0084b8;--radius:8px;--shadow:0 2px 10px rgba(0,0,0,.4)}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+a{color:inherit;text-decoration:none}
+.topbar{display:flex;align-items:center;gap:18px;padding:0 24px;height:56px;background:var(--bg-2);position:sticky;top:0;z-index:10;box-shadow:var(--shadow)}
+.brand{font-weight:700;font-size:18px;color:var(--accent);letter-spacing:.3px}
+.topbar nav{display:flex;gap:14px}
+.topbar nav a{color:var(--muted);font-size:14px;padding:4px 6px;border-radius:4px}
+.topbar nav a:hover{color:var(--text);background:rgba(255,255,255,.06)}
+.search-box input{background:var(--bg);border:1px solid #333;color:var(--text);padding:6px 12px;border-radius:6px;font-size:13px;width:200px}
+.search-box input:focus{border-color:var(--accent);outline:none}
+.topbar-admin{color:var(--accent)!important;font-size:14px;padding:4px 8px}
+.topbar-user{color:var(--muted);font-size:13px}
+.topbar-logout{color:var(--muted);font-size:13px;padding:4px 8px}
+.topbar-logout:hover{color:#f04747}
+.spacer{flex:1}
+.ghost{background:transparent;border:1px solid #333;color:var(--muted);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px}
+.ghost:hover{color:var(--text);border-color:var(--accent)}
+main{padding:24px;max-width:1400px;margin:0 auto}
+.hero{padding:40px 0 24px}
+.hero h1{font-size:34px;margin:0 0 6px}
+.hero p{color:var(--muted);margin:0}
+.row{margin:32px 0}
+.row h2{font-size:20px;margin:0 0 14px}
+.card-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px}
+.card{background:var(--card);border-radius:var(--radius);overflow:hidden;transition:transform .12s,background .12s;cursor:pointer}
+.card:hover{transform:translateY(-3px);background:var(--card-hover)}
+.card .thumb{aspect-ratio:2/3;background:#2c2c2c center/cover no-repeat;position:relative}
+.card .thumb.empty{display:flex;align-items:center;justify-content:center;color:#555;font-size:28px}
+.card .info{padding:10px 12px}
+.card .info .name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .info .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.backend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.backend{background:var(--card);border-radius:var(--radius);padding:14px}
+.backend .bname{font-weight:600;display:flex;align-items:center;gap:8px}
+.dot{width:8px;height:8px;border-radius:50%;background:#444;display:inline-block}
+.dot.ok{background:#43b581}.dot.bad{background:#f04747}
+.backend .bkind{font-size:12px;color:var(--muted);text-transform:uppercase}
+.backend .bmetric{font-size:12px;color:var(--muted);margin-top:6px;display:flex;justify-content:space-between}
+.backend .bar{height:4px;background:#333;border-radius:2px;margin-top:4px;overflow:hidden}
+.backend .bar>span{display:block;height:100%;background:var(--accent)}
+.detail{display:flex;gap:24px;flex-wrap:wrap}
+.detail .poster{width:220px;flex:0 0 220px}
+.detail .poster img{width:100%;border-radius:var(--radius);display:block;background:#2c2c2c;aspect-ratio:2/3;object-fit:cover}
+.detail .meta{flex:1;min-width:240px}
+.detail .meta h1{margin:0 0 6px}
+.sub{color:var(--muted);margin-bottom:10px}
+.sources{font-size:12px;color:var(--muted);margin-bottom:14px}
+.sources .chip{background:var(--card);padding:3px 8px;border-radius:4px;margin-right:4px}
+.actions .play{display:inline-block;background:var(--accent);color:#000;font-weight:700;padding:10px 24px;border-radius:6px}
+.actions .play:hover{background:var(--accent-2);color:#fff}
+.player-wrap{max-width:1000px;margin:0 auto}
+.player-wrap .back{color:var(--muted);font-size:14px}
+.player-box{background:#000;border-radius:var(--radius);overflow:hidden;margin-top:12px}
+video,audio{width:100%;display:block;max-height:78vh;background:#000}
+.stream-status{color:var(--muted);font-size:12px;margin-top:8px}
+.error{text-align:center;padding:80px 0}
+.error h1{font-size:60px;margin:0;color:var(--accent)}
+.error p{color:var(--muted)}

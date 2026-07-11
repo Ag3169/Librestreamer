@@ -1,0 +1,45 @@
+{% extends "admin/base.html" %}
+{% block title %}Users{% endblock %}
+{% block content %}
+<h1>Users</h1>
+<table class="admin-table">
+  <thead><tr><th>Username</th><th>Admin</th><th>Actions</th></tr></thead>
+  <tbody>
+    {% for u in users %}
+    <tr>
+      <td>{{ u['username'] }}</td>
+      <td>{{ 'Yes' if u['is_admin'] else 'No' }}</td>
+      <td class="row-actions">
+        {% if u['username'] != 'admin' %}
+        <button class="small danger" onclick="deleteUser('{{ u['username'] }}')">Delete</button>
+        {% endif %}
+        <button class="small" onclick="changePass('{{ u['username'] }}')">Change Password</button>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<h2>Add User</h2>
+<div class="form-card">
+  <form method="POST" action="/admin/users/add">
+    <div class="form-row"><label>Username</label><input type="text" name="username" required></div>
+    <div class="form-row"><label>Password</label><input type="password" name="password" required></div>
+    <div class="form-row"><label>Admin</label><input type="checkbox" name="is_admin"></div>
+    <button type="submit">Add User</button>
+  </form>
+</div>
+<div id="pass-modal" class="modal" style="display:none">
+  <div class="modal-card">
+    <h2>Change Password</h2>
+    <form id="pass-form" method="POST">
+      <input type="password" name="password" placeholder="New password" required>
+      <button type="submit">Change</button>
+      <button type="button" onclick="document.getElementById('pass-modal').style.display='none'">Cancel</button>
+    </form>
+  </div>
+</div>
+<script>
+function changePass(u){const m=document.getElementById('pass-modal');document.getElementById('pass-form').action='/admin/users/'+u+'/password';m.style.display='flex';}
+function deleteUser(u){if(confirm('Delete '+u+'?'))fetch('/admin/users/'+u+'/delete',{method:'POST'}).then(()=>location.href='/admin/users');}
+</script>
+{% endblock %}

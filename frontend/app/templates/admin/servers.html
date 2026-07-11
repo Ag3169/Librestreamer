@@ -1,0 +1,205 @@
+{% extends "admin/base.html" %}
+{% block title %}Servers{% endblock %}
+{% block content %}
+<h1>Server Management</h1>
+
+<h2>Connected Backends</h2>
+{% if backends|length == 0 %}
+<p class="empty-state">No backends connected. Add one below or run <code>./setup.sh</code> on a media server.</p>
+{% endif %}
+
+{% for b in backends %}
+<div class="server-card" id="server-{{ b.name }}">
+  <div class="server-header">
+    <div class="server-name">
+      <span class="dot {{ 'ok' if b.healthy else 'bad' }}"></span>
+      {{ b.name }}
+      {% if not b.enabled %}<span class="badge badge-off">Disabled</span>{% endif %}
+      {% if b.healthy %}<span class="badge badge-on">Online</span>{% else %}<span class="badge badge-off">Offline</span>{% endif %}
+    </div>
+    <div class="server-actions">
+      <button class="btn small" onclick="rescanBackend('{{ b.name }}')">Rescan</button>
+      <button class="btn small" onclick="toggleBackend('{{ b.name }}')">{{ 'Disable' if b.enabled else 'Enable' }}</button>
+      <button class="btn small" onclick="showEdit('{{ b.name }}')">Edit</button>
+      <button class="btn small danger" onclick="removeBackend('{{ b.name }}')">Remove</button>
+    </div>
+  </div>
+  <div class="server-body">
+    <div class="server-info">
+      <table class="info-table">
+        <tr><td>Type</td><td>{{ b.type }}</td></tr>
+        <tr><td>Host</td><td>{{ b.host }}:{{ b.port }}</td></tr>
+        <tr><td>Priority</td><td>{{ b.priority }}</td></tr>
+        <tr><td>Max Streams</td><td>{{ b.max_streams }}</td></tr>
+        <tr><td>Items</td><td>{{ backend_counts.get(b.name, 0) }}</td></tr>
+        <tr><td>Active Streams</td><td>{{ b.active_streams }}</td></tr>
+        {% if b.last_seen_ago >= 0 %}
+        <tr><td>Last Heartbeat</td><td>{{ '%.0f'|format(b.last_seen_ago) }}s ago</td></tr>
+        {% endif %}
+      </table>
+    </div>
+    <div class="server-metrics">
+      {% if b.cpu_usage_pct >= 0 %}
+      <div class="bmetric"><span>CPU</span><span>{{ '%.0f'|format(b.cpu_usage_pct) }}%</span></div>
+      <div class="bar"><span style="width:{{ b.cpu_usage_pct }}%"></span></div>
+      {% endif %}
+      {% if b.memory_usage_pct >= 0 %}
+      <div class="bmetric"><span>RAM</span><span>{{ '%.0f'|format(b.memory_usage_pct) }}%</span></div>
+      <div class="bar"><span style="width:{{ b.memory_usage_pct }}%"></span></div>
+      {% endif %}
+      {% if b.gpu_usage_pct >= 0 %}
+      <div class="bmetric"><span>GPU ({{ b.gpu_name }})</span><span>{{ '%.0f'|format(b.gpu_usage_pct) }}%</span></div>
+      <div class="bar"><span style="width:{{ b.gpu_usage_pct }}%"></span></div>
+      {% endif %}
+      {% if b.disk_usage_pct >= 0 %}
+      <div class="bmetric"><span>Disk</span><span>{{ '%.0f'|format(b.disk_usage_pct) }}%</span></div>
+      <div class="bar"><span style="width:{{ b.disk_usage_pct }}%"></span></div>
+      {% endif %}
+      {% if b.memory_total_bytes > 0 %}
+      <div class="bmetric"><span>Memory</span><span>{{ '%.1f'|format(b.memory_used_bytes / 1073741824) }} / {{ '%.1f'|format(b.memory_total_bytes / 1073741824) }} GB</span></div>
+      {% endif %}
+      {% if b.disk_total_bytes > 0 %}
+      <div class="bmetric"><span>Disk</span><span>{{ '%.1f'|format(b.disk_used_bytes / 1073741824) }} / {{ '%.1f'|format(b.disk_total_bytes / 1073741824) }} GB</span></div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="edit-form" id="edit-{{ b.name }}" style="display:none">
+    <div class="form-card">
+      <h3>Edit {{ b.name }}</h3>
+      <form onsubmit="submitEdit(event, '{{ b.name }}')">
+        <div class="form-row"><label>Host</label><input type="text" name="host" value="{{ b.host }}"></div>
+        <div class="form-row"><label>Port</label><input type="number" name="port" value="{{ b.port }}"></div>
+        {% if b.type == "librestreamer" %}
+        <div class="form-row"><label>Secret</label><input type="text" name="secret" value="{{ b.secret }}"></div>
+        {% else %}
+        <div class="form-row"><label>API Key</label><input type="text" name="api_key" value="{{ b.api_key }}"></div>
+        {% endif %}
+        <div class="form-row"><label>Priority</label><input type="number" name="priority" value="{{ b.priority }}"></div>
+        <div class="form-row"><label>Max Streams</label><input type="number" name="max_streams" value="{{ b.max_streams }}"></div>
+        <button type="submit" class="btn btn-primary">Save</button>
+        <button type="button" class="btn" onclick="document.getElementById('edit-{{ b.name }}').style.display='none'">Cancel</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<h2>Add Backend</h2>
+<div class="form-card">
+  <form id="add-backend-form">
+    <div class="form-row"><label>Name</label><input type="text" name="name" required placeholder="My Media Server"></div>
+    <div class="form-row"><label>Type</label>
+      <select name="type" id="backend-type" onchange="toggleFields()">
+        <option value="librestreamer">LibreStreamer</option>
+        <option value="jellyfin">Jellyfin</option>
+      </select>
+    </div>
+    <div id="ls-fields">
+      <div class="form-row"><label>Host</label><input type="text" name="host" placeholder="10.0.0.5"></div>
+      <div class="form-row"><label>Port</label><input type="number" name="port" value="8080"></div>
+      <div class="form-row"><label>Secret</label><input type="text" name="secret" placeholder="shared secret"></div>
+    </div>
+    <div id="jf-fields" style="display:none">
+      <div class="form-row"><label>Host</label><input type="text" name="host" placeholder="jellyfin.example.com"></div>
+      <div class="form-row"><label>Port</label><input type="number" name="port" value="443"></div>
+      <div class="form-row"><label>API Key</label><input type="text" name="api_key" placeholder="jellyfin api key"></div>
+      <div class="form-row"><label>SSL</label><input type="checkbox" name="ssl" checked></div>
+      <div class="form-row"><label>User ID (optional)</label><input type="text" name="user_id"></div>
+    </div>
+    <div class="form-row"><label>Priority</label><input type="number" name="priority" value="1"></div>
+    <div class="form-row"><label>Max Streams</label><input type="number" name="max_streams" value="4"></div>
+    <button type="submit" class="btn btn-primary">Add Backend</button>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toast(msg, type) {
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type || 'ok');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+function toggleFields() {
+  const t = document.getElementById('backend-type').value;
+  document.getElementById('ls-fields').style.display = t === 'librestreamer' ? '' : 'none';
+  document.getElementById('jf-fields').style.display = t === 'jellyfin' ? '' : 'none';
+}
+
+function rescanBackend(name) {
+  toast('Rescanning ' + name + '...');
+  fetch('/api/admin/backends/' + encodeURIComponent(name) + '/rescan', {method: 'POST'})
+    .then(r => r.ok ? r.json() : r.json().then(d => Promise.reject(d)))
+    .then(() => { toast('Rescan complete'); setTimeout(() => location.reload(), 1000); })
+    .catch(d => toast('Rescan failed: ' + (d.detail || 'error'), 'error'));
+}
+
+function removeBackend(name) {
+  if (!confirm('Remove backend "' + name + '"? This deletes all its media items.')) return;
+  fetch('/api/admin/backends/' + encodeURIComponent(name) + '/remove', {method: 'POST'})
+    .then(() => { toast('Backend removed'); setTimeout(() => location.reload(), 1000); })
+    .catch(e => toast('Error: ' + e.message, 'error'));
+}
+
+function toggleBackend(name) {
+  fetch('/api/admin/backends/' + encodeURIComponent(name) + '/toggle', {method: 'POST'})
+    .then(r => r.json())
+    .then(d => { toast(name + ' ' + (d.enabled ? 'enabled' : 'disabled')); setTimeout(() => location.reload(), 1000); })
+    .catch(e => toast('Error: ' + e.message, 'error'));
+}
+
+function showEdit(name) {
+  document.getElementById('edit-' + name).style.display = '';
+}
+
+function submitEdit(e, name) {
+  e.preventDefault();
+  const form = e.target;
+  const data = {};
+  new FormData(form).forEach((v, k) => {
+    if (k === 'port' || k === 'priority' || k === 'max_streams') data[k] = parseInt(v);
+    else if (k === 'ssl') data[k] = !!v;
+    else data[k] = v;
+  });
+  fetch('/api/admin/backends/' + encodeURIComponent(name) + '/edit', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(data)
+  })
+  .then(r => r.json())
+  .then(() => { toast('Backend updated'); setTimeout(() => location.reload(), 1000); })
+  .catch(e => toast('Error: ' + e.message, 'error'));
+}
+
+document.getElementById('add-backend-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const form = e.target;
+  const fd = new FormData(form);
+  const data = {};
+  fd.forEach((v, k) => {
+    if (k === 'port' || k === 'priority' || k === 'max_streams') data[k] = parseInt(v);
+    else if (k === 'ssl') data[k] = !!v;
+    else data[k] = v;
+  });
+  try {
+    const r = await fetch('/api/admin/backends/add', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    });
+    if (!r.ok) {
+      const d = await r.json();
+      toast('Error: ' + (d.detail || 'failed'), 'error');
+      return;
+    }
+    toast('Backend added');
+    setTimeout(() => location.reload(), 1000);
+  } catch(err) {
+    toast('Error: ' + err.message, 'error');
+  }
+});
+</script>
+{% endblock %}

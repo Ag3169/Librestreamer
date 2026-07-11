@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}LibreStreamer{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">LibreStreamer</a>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/library">All</a>
+      <a href="/library?type=movie">Movies</a>
+      <a href="/library?type=show">Shows</a>
+      <a href="/library?type=episode">Episodes</a>
+      <a href="/library?type=music">Music</a>
+    </nav>
+    <div class="spacer"></div>
+    <form action="/search" method="GET" class="search-box">
+      <input type="text" name="q" placeholder="Search..." value="{{ request.query_params.get('q', '') }}">
+    </form>
+    {% if user %}
+    {% if user['is_admin'] %}
+    <a href="/admin" class="topbar-admin">Admin</a>
+    {% endif %}
+    <span class="topbar-user">{{ user['username'] }}</span>
+    <a href="/logout" class="topbar-logout">Logout</a>
+    {% endif %}
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <script src="/static/js/app.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

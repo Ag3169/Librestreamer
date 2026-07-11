@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Admin{% endblock %} &middot; LibreStreamer</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <a class="admin-brand" href="/">LibreStreamer</a>
+      <nav>
+        <a href="/admin" class="{% if request.url.path == '/admin' %}active{% endif %}">Dashboard</a>
+        <a href="/admin/servers" class="{% if request.url.path == '/admin/servers' %}active{% endif %}">Servers</a>
+        <a href="/admin/upload" class="{% if request.url.path == '/admin/upload' %}active{% endif %}">Upload</a>
+        <a href="/admin/libraries" class="{% if request.url.path == '/admin/libraries' %}active{% endif %}">Libraries</a>
+        <a href="/admin/users" class="{% if request.url.path == '/admin/users' %}active{% endif %}">Users</a>
+        <a href="/admin/logs" class="{% if request.url.path == '/admin/logs' %}active{% endif %}">Logs</a>
+      </nav>
+      <div class="admin-sidebar-footer">
+        <span>{{ user['username'] if user else '' }}</span>
+        <a href="/logout">Logout</a>
+      </div>
+    </aside>
+    <main class="admin-main">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  <script src="/static/js/app.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

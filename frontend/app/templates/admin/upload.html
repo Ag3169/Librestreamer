@@ -1,0 +1,43 @@
+{% extends "admin/base.html" %}
+{% block title %}Upload{% endblock %}
+{% block content %}
+<h1>Upload Media</h1>
+
+{% if not backends %}
+<div class="empty-state">
+  <p>No upload-capable backends connected.</p>
+  <p>Add a librestreamer backend in <a href="/admin/servers">Server Management</a>.</p>
+</div>
+{% else %}
+<div class="upload-page">
+  <div class="upload-config">
+    <div class="form-row"><label>Target Backend</label>
+      <select id="upload-backend">
+        {% for b in backends %}<option value="{{ b.name }}">{{ b.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-row"><label>Category</label>
+      <select id="upload-category" onchange="loadDir()">
+        <option value="movies">Movies</option><option value="tv">TV Shows</option><option value="music">Music</option>
+      </select>
+    </div>
+    <div class="form-row"><label>Subfolder</label>
+      <input type="text" id="upload-subpath" placeholder="Movie Name (2024)" onchange="loadDir()">
+    </div>
+    <div id="dir-preview" class="dir-preview"></div>
+  </div>
+  <div class="dropzone" id="dropzone">
+    <div class="dropzone-inner">
+      <div class="dropzone-icon">&#128193;</div>
+      <p>Drag and drop files here</p>
+      <p class="muted">or click to browse</p>
+      <input type="file" id="file-input" multiple style="display:none">
+    </div>
+  </div>
+  <div id="file-list" class="file-list"></div>
+  <div id="upload-progress" class="upload-progress"></div>
+  <button id="upload-btn" class="primary" disabled>Upload</button>
+</div>
+<script src="/static/js/upload.js"></script>
+{% endif %}
+{% endblock %}

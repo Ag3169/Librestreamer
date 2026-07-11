@@ -1,0 +1,9 @@
+{% extends "admin/base.html" %}
+{% block title %}Logs{% endblock %}
+{% block content %}
+<h1>Logs</h1>
+<p class="muted">Last 200 lines</p>
+<pre class="log-view">
+{% for line in lines %}{{ line }}{% endfor %}
+</pre>
+{% endblock %}

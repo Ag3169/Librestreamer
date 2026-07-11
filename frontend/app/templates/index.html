@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}LibreStreamer &middot; Home{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Your media, distributed.</h1>
+  <p>Aggregated across {{ backend_count }} backend{{ '' if backend_count == 1 else 's' }}.</p>
+</section>
+
+<section class="row">
+  <h2>Movies</h2>
+  <div class="card-row" id="movies"></div>
+</section>
+
+<section class="row">
+  <h2>Shows</h2>
+  <div class="card-row" id="shows"></div>
+</section>
+
+<section class="row">
+  <h2>Backends</h2>
+  <div id="backends" class="backend-grid"></div>
+</section>
+{% endblock %}

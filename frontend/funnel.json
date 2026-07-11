@@ -1,0 +1,21 @@
+{
+  "backends": [
+    {
+      "name": "Home Server",
+      "host": "127.0.0.1",
+      "port": 8080,
+      "secret": "change-me",
+      "type": "librestreamer",
+      "priority": 1,
+      "max_streams": 4,
+      "enabled": true
+    }
+  ],
+  "frontend": {
+    "host": "0.0.0.0",
+    "port": 3000,
+    "session_secret": "change-me-session",
+    "auto_load_balance": true,
+    "failover_timeout": 10
+  }
+}

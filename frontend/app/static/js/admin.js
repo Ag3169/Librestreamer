@@ -1,0 +1,5 @@
+// admin panel JS - backend management
+function toggleFields(){const t=document.getElementById('backend-type').value;document.getElementById('ls-fields').style.display=t==='librestreamer'?'':'none';document.getElementById('jf-fields').style.display=t==='jellyfin'?'':'none'}
+async function rescanBackend(name){await fetch('/api/admin/backends/'+name+'/rescan',{method:'POST'});location.reload()}
+async function removeBackend(name){if(!confirm('Remove '+name+'?'))return;await fetch('/api/admin/backends/'+name+'/remove',{method:'POST'});location.reload()}
+document.getElementById('add-backend-form')?.addEventListener('submit',async e=>{e.preventDefault();const fd=new FormData(e.target);const payload={};for(const[k,v]of fd.entries()){if(k==='ssl')payload[k]=true;else if(k==='priority'||k==='max_streams'||k==='port')payload[k]=parseInt(v);else payload[k]=v}await fetch('/api/admin/backends/add',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});location.reload()});
