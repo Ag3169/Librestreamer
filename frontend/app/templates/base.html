@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ 'rtl' if lang in ('ar','he') else 'ltr' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <title>{% block title %}LibreStreamer{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">LibreStreamer</a>
+    <nav>
+      <a href="/">{{ t("nav.home") }}</a>
+      <a href="/library">{{ t("nav.all") }}</a>
+      <a href="/library?type=movie">{{ t("nav.movies") }}</a>
+      <a href="/library?type=show">{{ t("nav.shows") }}</a>
+      <a href="/library?type=episode">{{ t("nav.episodes") }}</a>
+      <a href="/library?type=music">{{ t("nav.music") }}</a>
+    </nav>
+    <div class="spacer"></div>
+    <form action="/search" method="GET" class="search-box">
+      <input type="text" name="q" placeholder="{{ t('nav.search') }}" value="{{ request.query_params.get('q', '') }}">
+    </form>
+    <select id="lang-select" class="lang-select" onchange="changeLang(this.value)">
+      {% for code, name in languages %}
+      <option value="{{ code }}" {{ 'selected' if code == lang else '' }}>{{ name }}</option>
+      {% endfor %}
+    </select>
+    {% if user %}
+    {% if user['is_admin'] %}
+    <a href="/admin" class="topbar-admin">{{ t("nav.admin") }}</a>
+    {% endif %}
+    <span class="topbar-user">{{ user['username'] }}</span>
+    <a href="/preferences" class="topbar-prefs">{{ t("nav.preferences") }}</a>
+    <a href="/logout" class="topbar-logout">{{ t("nav.logout") }}</a>
+    {% endif %}
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <script src="/static/js/app.js"></script>
+  <script>
+  window.i18n = {
+    nothing_here: {{ t("common.nothing_here")|tojson }},
+    stream_error: {{ t("player.stream_error")|tojson }},
+    playing: {{ t("player.playing")|tojson }},
+    buffering: {{ t("player.buffering")|tojson }},
+    cpu: {{ t("dash.cpu")|tojson }},
+    ram: {{ t("dash.ram")|tojson }},
+    gpu: {{ t("dash.gpu")|tojson }}
+  };
+  function changeLang(lang) {
+    fetch('/api/language', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({lang:lang})})
+    .then(() => location.reload());
+  }
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

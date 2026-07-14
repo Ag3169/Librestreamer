@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ 'rtl' if lang in ('ar','he') else 'ltr' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <title>{% block title %}{{ t("admin.title") }}{% endblock %} &middot; LibreStreamer</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+  <div class="admin-layout">
+    <aside class="admin-sidebar">
+      <a class="admin-brand" href="/">LibreStreamer</a>
+      <nav>
+        <a href="/admin" class="{% if request.url.path == '/admin' %}active{% endif %}">{{ t("admin.dashboard") }}</a>
+        <a href="/admin/servers" class="{% if request.url.path == '/admin/servers' %}active{% endif %}">{{ t("admin.servers") }}</a>
+        <a href="/admin/upload" class="{% if request.url.path == '/admin/upload' %}active{% endif %}">{{ t("admin.upload") }}</a>
+        <a href="/admin/libraries" class="{% if request.url.path == '/admin/libraries' %}active{% endif %}">{{ t("admin.libraries") }}</a>
+        <a href="/admin/users" class="{% if request.url.path == '/admin/users' %}active{% endif %}">{{ t("admin.users") }}</a>
+        <a href="/admin/logs" class="{% if request.url.path == '/admin/logs' %}active{% endif %}">{{ t("admin.logs") }}</a>
+      </nav>
+      <div class="admin-sidebar-footer">
+        <select class="lang-select" onchange="changeLang(this.value)">
+          {% for code, name in languages %}
+          <option value="{{ code }}" {{ 'selected' if code == lang else '' }}>{{ name }}</option>
+          {% endfor %}
+        </select>
+        <span>{{ user['username'] if user else '' }}</span>
+        <a href="/logout">{{ t("nav.logout") }}</a>
+      </div>
+    </aside>
+    <main class="admin-main">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+  <script src="/static/js/app.js"></script>
+  <script>
+  function changeLang(lang) {
+    fetch('/api/language', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({lang:lang})})
+    .then(() => location.reload());
+  }
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

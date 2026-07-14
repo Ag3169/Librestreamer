@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}LibreStreamer &middot; {{ item['title'] }}{% endblock %}
+{% block content %}
+<section class="detail">
+  <div class="poster" id="poster">
+    <img id="poster-img" alt="">
+  </div>
+  <div class="meta">
+    <h1 id="item-name">{{ item['title'] }}</h1>
+    <div id="item-sub" class="sub"></div>
+    <div id="item-sources" class="sources"></div>
+    <div class="actions">
+      {% if item['type'] in ('movie', 'episode', 'music') %}
+      <a class="play" id="play-link" href="/watch/{{ item['id'] }}">{{ t("item.play") }}</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% if children %}
+<section class="row">
+  <h2>{{ t("item.episodes") }}</h2>
+  <div class="card-row" id="children"></div>
+</section>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+  window.ITEM_ID = {{ item['id']|tojson }};
+  window.ITEM_TYPE = {{ item['type']|tojson }};
+  window.ITEM_THUMB = {{ item['has_thumbnail']|tojson }};
+  window.CHILDREN = {{ children_json|tojson }};
+</script>
+{% endblock %}

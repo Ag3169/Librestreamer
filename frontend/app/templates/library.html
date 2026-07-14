@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}LibreStreamer &middot; {{ item_type|capitalize if item_type else t("library.title") }}{% endblock %}
+{% block content %}
+<section class="row">
+  <h2>{{ item_type|capitalize if item_type else t("library.all") }}</h2>
+  <div class="card-row" id="lib-grid"></div>
+</section>
+{% endblock %}
+{% block scripts %}
+<script>window.LIBRARY_FILTER = {{ item_type|tojson }};</script>
+{% endblock %}

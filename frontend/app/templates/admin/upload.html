@@ -1,0 +1,53 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ t("upload.title") }}{% endblock %}
+{% block content %}
+<h1>{{ t("upload.heading") }}</h1>
+
+{% if not backends %}
+<div class="empty-state">
+  <p>{{ t("upload.no_backends") }}</p>
+  <p>{{ t("upload.add_backend_hint") }}</p>
+</div>
+{% else %}
+<div class="upload-page">
+  <div class="upload-config">
+    <div class="form-row"><label>{{ t("upload.target") }}</label>
+      <select id="upload-backend">
+        {% for b in backends %}<option value="{{ b.name }}">{{ b.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="form-row"><label>{{ t("upload.category") }}</label>
+      <select id="upload-category" onchange="loadDir()">
+        <option value="movies">{{ t("nav.movies") }}</option><option value="tv">{{ t("upload.tv_shows") }}</option><option value="music">{{ t("nav.music") }}</option>
+      </select>
+    </div>
+    <div class="form-row"><label>{{ t("upload.subfolder") }}</label>
+      <input type="text" id="upload-subpath" placeholder="Movie Name (2024)" onchange="loadDir()">
+    </div>
+    <div id="dir-preview" class="dir-preview"></div>
+  </div>
+  <div class="dropzone" id="dropzone">
+    <div class="dropzone-inner">
+      <div class="dropzone-icon">&#128193;</div>
+      <p>{{ t("upload.drop_here") }}</p>
+      <p class="muted">{{ t("upload.click_browse") }}</p>
+      <input type="file" id="file-input" multiple style="display:none">
+    </div>
+  </div>
+  <div id="file-list" class="file-list"></div>
+  <div id="upload-progress" class="upload-progress"></div>
+  <button id="upload-btn" class="primary" disabled>{{ t("upload.upload_btn") }}</button>
+</div>
+<script>
+window.i18n_upload = {
+  uploading: {{ t("upload.uploading")|tojson }},
+  uploaded: {{ t("upload.uploaded", n="__N__")|tojson }},
+  failed: {{ t("upload.failed")|tojson }},
+  error: {{ t("common.error", message="__M__")|tojson }},
+  empty_dir: {{ t("common.empty_dir")|tojson }},
+  upload_btn: {{ t("upload.upload_btn")|tojson }}
+};
+</script>
+<script src="/static/js/upload.js"></script>
+{% endif %}
+{% endblock %}

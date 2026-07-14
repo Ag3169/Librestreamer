@@ -1,0 +1,46 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ t("libraries.title") }}{% endblock %}
+{% block content %}
+<h1>{{ t("libraries.title") }}</h1>
+
+<div class="stat-cards">
+  <div class="stat-card"><div class="stat-num">{{ total }}</div><div class="stat-label">{{ t("libraries.total_items") }}</div></div>
+  {% for ty, count in counts.items() %}
+  <div class="stat-card"><div class="stat-num">{{ count }}</div><div class="stat-label">{{ ty|capitalize }}</div></div>
+  {% endfor %}
+</div>
+
+<h2>{{ t("libraries.per_backend") }}</h2>
+<table class="admin-table">
+  <thead><tr><th>{{ t("libraries.backend") }}</th><th>{{ t("libraries.items") }}</th><th>{{ t("libraries.pct_total") }}</th></tr></thead>
+  <tbody>
+    {% for name, count in backend_counts.items() %}
+    <tr>
+      <td>{{ name }}</td>
+      <td>{{ count }}</td>
+      <td>{{ '%.1f'|format(count * 100.0 / total) if total else 0 }}%</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2>{{ t("libraries.browse") }}</h2>
+<div class="quick-actions">
+  <a href="/library?type=movie"><button class="btn">{{ t("nav.movies") }}</button></a>
+  <a href="/library?type=show"><button class="btn">{{ t("upload.tv_shows") }}</button></a>
+  <a href="/library?type=music"><button class="btn">{{ t("nav.music") }}</button></a>
+  <button class="btn btn-primary" id="rescan-btn">{{ t("libraries.rescan_all") }}</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('rescan-btn').addEventListener('click', async function() {
+  this.textContent = '{{ t("libraries.scanning") }}';
+  const r = await fetch('/api/refresh', {method: 'POST'});
+  const d = await r.json();
+  this.textContent = '{{ t("dash.done_items", n="") }}' + d.items;
+  setTimeout(() => location.reload(), 1500);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,26 @@
+{
+  "server": {
+    "id": "node-1",
+    "name": "Media Server",
+    "host": "0.0.0.0",
+    "port": 8080,
+    "data_dir": "./data",
+    "media_paths": ["./media/movies", "./media/tv", "./media/music"],
+    "transcoding": {
+      "enabled": false,
+      "hardware_accel": "none",
+      "max_concurrent_streams": 4
+    }
+  },
+  "frontend": {
+    "enabled": false,
+    "frontend_host": "127.0.0.1",
+    "frontend_port": 3000,
+    "secret": "change-me",
+    "heartbeat_interval": 30
+  },
+  "monitoring": {
+    "enabled": true,
+    "metrics_port": 9090
+  }
+}

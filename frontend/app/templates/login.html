@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ 'rtl' if lang in ('ar','he') else 'ltr' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <title>{{ t("login.title") }} &middot; LibreStreamer</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body class="login-page">
+  <div class="login-card">
+    <h1>LibreStreamer</h1>
+    <p class="login-sub">{{ t("login.subtitle") }}</p>
+    {% if error %}
+    <div class="login-error">{{ error }}</div>
+    {% endif %}
+    <form action="/login" method="POST">
+      <input type="text" name="username" placeholder="{{ t('login.username') }}" required autofocus>
+      <input type="password" name="password" placeholder="{{ t('login.password') }}" required>
+      <button type="submit">{{ t("login.signin") }}</button>
+    </form>
+    <p class="login-hint">{{ t("login.hint") }}</p>
+    <select id="lang-select" class="lang-select lang-login" onchange="changeLang(this.value)">
+      {% for code, name in languages %}
+      <option value="{{ code }}" {{ 'selected' if code == lang else '' }}>{{ name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <script>
+  function changeLang(lang) {
+    document.cookie = "ls_lang=" + lang + ";max-age=" + 365*86400 + ";path=/";
+    location.reload();
+  }
+  </script>
+</body>
+</html>

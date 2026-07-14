@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./backend
+    container_name: ls-backend
+    volumes:
+      - ./backend/config.json:/config.json:ro
+      - ./backend/data:/data
+      - ./media:/media:ro
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: ls-frontend
+    volumes:
+      - ./frontend/funnel.json:/app/funnel.json
+      - ./frontend/data:/app/data
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped

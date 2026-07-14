@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}LibreStreamer &middot; {{ t("prefs.title") }}{% endblock %}
+{% block content %}
+<section class="prefs-page">
+  <h1>{{ t("prefs.title") }}</h1>
+
+  {% if request.query_params.get("ok") %}
+  <div class="login-error" style="background:rgba(74,211,153,.15);border-color:#4ad399;color:#4ad399">{{ t("prefs.password_changed") }}</div>
+  {% endif %}
+  {% if error %}
+  <div class="login-error">{{ error }}</div>
+  {% endif %}
+
+  <div class="prefs-section">
+    <h2>{{ t("prefs.account") }}</h2>
+    <div class="form-row"><label>{{ t("prefs.username") }}</label><input type="text" value="{{ user['username'] }}" disabled></div>
+  </div>
+
+  <div class="prefs-section">
+    <h2>{{ t("prefs.change_password") }}</h2>
+    <form method="POST" action="/preferences/password" class="form-card">
+      <div class="form-row"><label>{{ t("prefs.current_password") }}</label><input type="password" name="current_password" required></div>
+      <div class="form-row"><label>{{ t("prefs.new_password") }}</label><input type="password" name="new_password" required></div>
+      <button type="submit" class="btn btn-primary">{{ t("prefs.update_password") }}</button>
+    </form>
+  </div>
+
+  <div class="prefs-section">
+    <h2>{{ t("prefs.language") }}</h2>
+    <select class="lang-select" onchange="changeLang(this.value)">
+      {% for code, name in languages %}
+      <option value="{{ code }}" {{ 'selected' if code == lang else '' }}>{{ name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</section>
+{% endblock %}

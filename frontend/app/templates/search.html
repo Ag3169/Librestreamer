@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}LibreStreamer &middot; {{ t("search.title") }}{% endblock %}
+{% block content %}
+<section class="row">
+  <h2>{{ t("search.results", query=query) }}</h2>
+  {% if results %}
+  <div class="card-row" id="search-grid">
+    {% for r in results %}
+    <div class="card" onclick="location.href='/item/{{ r['id'] }}'">
+      {% if r['has_thumbnail'] %}
+      <div class="thumb" style="background-image:url('/api/thumbnail/{{ r['id'] }}')"></div>
+      {% else %}
+      <div class="thumb empty">&#127916;</div>
+      {% endif %}
+      <div class="info">
+        <div class="name">{{ r['title'] }}</div>
+        <div class="sub">{{ r['type']|capitalize }}{% if r['year'] %} &middot; {{ r['year'] }}{% endif %}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="muted">{{ t("search.no_results") }}</p>
+  {% endif %}
+</section>
+{% endblock %}

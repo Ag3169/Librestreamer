@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}LibreStreamer &middot; {{ t("index.title") }}{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>{{ t("index.welcome") }}</h1>
+  <p>{% if backend_count == 1 %}{{ t("index.aggregated_one", count=backend_count) }}{% else %}{{ t("index.aggregated_other", count=backend_count) }}{% endif %}</p>
+</section>
+
+{% if history %}
+<section class="row">
+  <h2>{{ t("index.continue_watching") }}</h2>
+  <div class="card-row" id="history-grid">
+    {% for h in history %}
+    <div class="card" onclick="location.href='/watch/{{ h['id'] }}'">
+      {% if h['has_thumbnail'] %}
+      <div class="thumb" style="background-image:url('/api/thumbnail/{{ h['id'] }}')"></div>
+      {% else %}
+      <div class="thumb empty">&#127916;</div>
+      {% endif %}
+      <div class="info">
+        <div class="name">{{ h['title'] }}</div>
+        <div class="sub">{{ h['type']|capitalize }}</div>
+        {% if h['duration'] > 0 %}
+        <div class="progress-mini"><span style="width:{{ (h['position'] * 100 / h['duration'])|round }}%"></span></div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="row">
+  <h2>{{ t("index.movies") }}</h2>
+  <div class="card-row" id="movies"></div>
+</section>
+
+<section class="row">
+  <h2>{{ t("index.shows") }}</h2>
+  <div class="card-row" id="shows"></div>
+</section>
+
+<section class="row">
+  <h2>{{ t("index.backends") }}</h2>
+  <div id="backends" class="backend-grid"></div>
+</section>
+{% endblock %}
