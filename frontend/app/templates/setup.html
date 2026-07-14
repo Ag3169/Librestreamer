@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="{{ lang }}" dir="{{ 'rtl' if lang in ('ar','he') else 'ltr' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <title>{{ t("setup.title") }} &middot; LibreStreamer</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body class="login-page">
+<div class="setup-card">
+  <h1>LibreStreamer</h1>
+  <p class="login-sub">{{ t("setup.welcome") }}</p>
+
+  <div class="setup-steps">
+    <div class="setup-step-indicator" id="step-indicator">
+      <span class="step active" data-step="1"><span class="step-num">1</span> {{ t("setup.admin_account") }}</span>
+      <span class="step" data-step="2"><span class="step-num">2</span> {{ t("setup.backend") }}</span>
+      <span class="step" data-step="3"><span class="step-num">3</span> {{ t("setup.libraries") }}</span>
+      <span class="step" data-step="4"><span class="step-num">4</span> {{ t("setup.done") }}</span>
+    </div>
+  </div>
+
+  <div id="setup-error" class="login-error" style="display:none"></div>
+
+  <!-- Step 1: Create Admin -->
+  <div class="setup-panel" id="panel-1">
+    <h2>{{ t("setup.create_admin") }}</h2>
+    <p class="muted">{{ t("setup.admin_desc") }}</p>
+    <div class="form-row">
+      <label>{{ t("setup.username") }}</label>
+      <input type="text" id="admin-username" placeholder="admin" autocomplete="username">
+    </div>
+    <div class="form-row">
+      <label>{{ t("setup.password") }}</label>
+      <input type="password" id="admin-password" placeholder="••••••••" autocomplete="new-password">
+    </div>
+    <button class="btn btn-primary" id="btn-step1" onclick="submitAdmin()">{{ t("setup.next") }} &rarr;</button>
+  </div>
+
+  <!-- Step 2: Backend Setup -->
+  <div class="setup-panel" id="panel-2" style="display:none">
+    <h2>{{ t("setup.choose_backend") }}</h2>
+    <p class="muted">{{ t("setup.backend_desc") }}</p>
+    <div class="backend-options">
+      <label class="backend-option">
+        <input type="radio" name="backend-type" value="local" checked onchange="toggleBackendForm()">
+        <div class="backend-option-card">
+          <strong>{{ t("setup.local_backend") }}</strong>
+          <p class="muted">{{ t("setup.local_backend_desc") }}</p>
+        </div>
+      </label>
+      <label class="backend-option">
+        <input type="radio" name="backend-type" value="remote" onchange="toggleBackendForm()">
+        <div class="backend-option-card">
+          <strong>{{ t("setup.remote_backend") }}</strong>
+          <p class="muted">{{ t("setup.remote_backend_desc") }}</p>
+        </div>
+      </label>
+      <label class="backend-option">
+        <input type="radio" name="backend-type" value="jellyfin" onchange="toggleBackendForm()">
+        <div class="backend-option-card">
+          <strong>Jellyfin</strong>
+          <p class="muted">{{ t("setup.jellyfin_desc") }}</p>
+        </div>
+      </label>
+    </div>
+
+    <!-- Local backend -->
+    <div id="form-local" class="backend-form">
+      <div class="form-row"><label>{{ t("setup.backend_name") }}</label><input type="text" id="local-name" value="Local Backend"></div>
+      <div class="form-row"><label>{{ t("setup.media_paths") }}</label>
+        <p class="muted">{{ t("setup.media_paths_desc") }}</p>
+        <div id="media-paths">
+          <div class="media-path-row">
+            <input type="text" class="media-path-input" placeholder="/path/to/movies">
+            <select class="media-path-type"><option value="movies">{{ t("nav.movies") }}</option><option value="tv">{{ t("setup.tv_shows") }}</option><option value="music">{{ t("nav.music") }}</option></select>
+            <button type="button" class="btn small danger" onclick="removePath(this)">&times;</button>
+          </div>
+        </div>
+        <button type="button" class="btn small" onclick="addPath()">+ {{ t("setup.add_path") }}</button>
+      </div>
+      <div class="form-row"><label>{{ t("setup.backend_port") }}</label><input type="number" id="local-port" value="8080"></div>
+    </div>
+
+    <!-- Remote LibreStreamer backend -->
+    <div id="form-remote" class="backend-form" style="display:none">
+      <div class="form-row"><label>{{ t("setup.backend_name") }}</label><input type="text" id="remote-name" placeholder="My Media Server"></div>
+      <div class="form-row"><label>{{ t("setup.host") }}</label><input type="text" id="remote-host" placeholder="10.0.0.5"></div>
+      <div class="form-row"><label>{{ t("setup.port") }}</label><input type="number" id="remote-port" value="8080"></div>
+      <div class="form-row"><label>{{ t("setup.secret") }}</label><input type="text" id="remote-secret" placeholder="shared secret"></div>
+    </div>
+
+    <!-- Jellyfin -->
+    <div id="form-jellyfin" class="backend-form" style="display:none">
+      <div class="form-row"><label>{{ t("setup.backend_name") }}</label><input type="text" id="jf-name" value="Jellyfin"></div>
+      <div class="form-row"><label>{{ t("setup.host") }}</label><input type="text" id="jf-host" placeholder="jellyfin.example.com"></div>
+      <div class="form-row"><label>{{ t("setup.port") }}</label><input type="number" id="jf-port" value="8096"></div>
+      <div class="form-row"><label>{{ t("setup.api_key") }}</label><input type="text" id="jf-api-key" placeholder="Jellyfin API key"></div>
+      <div class="form-row"><label>{{ t("setup.ssl") }}</label><input type="checkbox" id="jf-ssl"></div>
+    </div>
+
+    <div class="setup-nav">
+      <button class="btn" onclick="showStep(1)">&larr; {{ t("setup.back") }}</button>
+      <button class="btn btn-primary" id="btn-step2" onclick="submitBackend()">{{ t("setup.next") }} &rarr;</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Libraries -->
+  <div class="setup-panel" id="panel-3" style="display:none">
+    <h2>{{ t("setup.library_setup") }}</h2>
+    <div id="library-status">
+      <p class="muted">{{ t("setup.scanning_libraries") }}</p>
+      <div class="spinner"></div>
+    </div>
+    <div id="library-results" style="display:none">
+      <div class="stat-cards" id="lib-stats"></div>
+      <div id="lib-items"></div>
+    </div>
+    <div class="setup-nav">
+      <button class="btn" onclick="showStep(2)">&larr; {{ t("setup.back") }}</button>
+      <button class="btn btn-primary" id="btn-step3" onclick="showStep(4)">{{ t("setup.next") }} &rarr;</button>
+    </div>
+  </div>
+
+  <!-- Step 4: Done -->
+  <div class="setup-panel" id="panel-4" style="display:none">
+    <h2>{{ t("setup.complete") }}</h2>
+    <p>{{ t("setup.complete_desc") }}</p>
+    <div class="setup-done-icon">&#10003;</div>
+    <button class="btn btn-primary" onclick="finishSetup()">{{ t("setup.go_to_login") }} &rarr;</button>
+  </div>
+</div>
+
+<script>
+window.i18n_setup = {
+  "next": {{ t("setup.next")|tojson }},
+  "back": {{ t("setup.back")|tojson }},
+  "media_items": {{ t("dash.media_items")|tojson }},
+  "no_items_found": {{ t("setup.no_items_found")|tojson }},
+  "scan_failed": {{ t("setup.scan_failed")|tojson }},
+  "err_username_short": {{ t("setup.err_username_short")|tojson }},
+  "err_password_short": {{ t("setup.err_password_short")|tojson }},
+  "err_media_paths": {{ t("setup.err_media_paths")|tojson }},
+  "err_host_secret": {{ t("setup.err_host_secret")|tojson }},
+  "err_host_apikey": {{ t("setup.err_host_apikey")|tojson }},
+  "err_secret_required": {{ t("setup.err_secret_required")|tojson }},
+  "err_api_key_required": {{ t("setup.err_api_key_required")|tojson }},
+  "err_create_admin_first": {{ t("setup.err_create_admin_first")|tojson }},
+  "err_setup_already_done": {{ t("setup.err_setup_already_done")|tojson }}
+};
+function t(key) { return (window.i18n_setup && window.i18n_setup[key]) || key; }
+function showError(msg) {
+  const e = document.getElementById('setup-error');
+  e.textContent = msg;
+  e.style.display = msg ? '' : 'none';
+}
+function showStep(n) {
+  document.querySelectorAll('.setup-panel').forEach(p => p.style.display = 'none');
+  const panel = document.getElementById('panel-' + n);
+  if (panel) panel.style.display = '';
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.step[data-step="' + n + '"]').forEach(s => s.classList.add('active'));
+  showError('');
+}
+function toggleBackendForm() {
+  const v = document.querySelector('input[name="backend-type"]:checked').value;
+  ['form-local','form-remote','form-jellyfin'].forEach(id => document.getElementById(id).style.display = 'none');
+  const map = {local:'form-local', remote:'form-remote', jellyfin:'form-jellyfin'};
+  document.getElementById(map[v]).style.display = '';
+}
+function addPath() {
+  const c = document.querySelector('.media-path-row').cloneNode(true);
+  c.querySelector('.media-path-input').value = '';
+  document.getElementById('media-paths').appendChild(c);
+}
+function removePath(btn) {
+  const rows = document.querySelectorAll('.media-path-row');
+  if (rows.length > 1) btn.closest('.media-path-row').remove();
+}
+
+async function submitAdmin() {
+  const username = document.getElementById('admin-username').value.trim();
+  const password = document.getElementById('admin-password').value;
+  if (!username || username.length < 2) { showError(t('err_username_short')); return; }
+  if (password.length < 4) { showError(t('err_password_short')); return; }
+  const btn = document.getElementById('btn-step1');
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    const r = await fetch('/api/setup/admin', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    const d = await r.json();
+    if (r.ok) { showError(''); showStep(2); }
+    else showError(t('err_' + d.error) || d.error);
+  } catch(e) { showError(e.message); }
+  btn.disabled = false; btn.textContent = t('next') + ' \u2192';
+}
+
+async function submitBackend() {
+  const v = document.querySelector('input[name="backend-type"]:checked').value;
+  const btn = document.getElementById('btn-step2');
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    let payload = {type: v};
+    if (v === 'local') {
+      payload.name = document.getElementById('local-name').value || 'Local Backend';
+      payload.port = parseInt(document.getElementById('local-port').value) || 8080;
+      payload.media_paths = [];
+      document.querySelectorAll('.media-path-row').forEach(row => {
+        const path = row.querySelector('.media-path-input').value.trim();
+        if (path) payload.media_paths.push(path);
+      });
+      if (!payload.media_paths.length) { showError(t('err_media_paths')); btn.disabled = false; btn.textContent = t('next') + ' \u2192'; return; }
+      const fePort = parseInt(window.location.port) || 3000;
+      payload.frontend_port = fePort;
+      const r = await fetch('/api/setup/local-backend', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const d = await r.json();
+      if (!r.ok) { showError(t('err_' + d.error) || d.error || d.hint || 'Error'); btn.disabled = false; btn.textContent = t('next') + ' \u2192'; return; }
+    } else if (v === 'remote') {
+      payload.name = document.getElementById('remote-name').value;
+      payload.host = document.getElementById('remote-host').value;
+      payload.port = parseInt(document.getElementById('remote-port').value) || 8080;
+      payload.secret = document.getElementById('remote-secret').value;
+      if (!payload.host || !payload.secret) { showError(t('err_host_secret')); btn.disabled = false; btn.textContent = t('next') + ' \u2192'; return; }
+      payload.type = 'librestreamer';
+      const r = await fetch('/api/setup/backend', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const d = await r.json();
+      if (!r.ok) { showError(t('err_' + d.error) || d.error); btn.disabled = false; btn.textContent = t('next') + ' \u2192'; return; }
+    } else if (v === 'jellyfin') {
+      payload.name = document.getElementById('jf-name').value;
+      payload.host = document.getElementById('jf-host').value;
+      payload.port = parseInt(document.getElementById('jf-port').value) || 8096;
+      payload.api_key = document.getElementById('jf-api-key').value;
+      payload.ssl = document.getElementById('jf-ssl').checked;
+      if (!payload.host || !payload.api_key) { showError(t('err_host_apikey')); btn.disabled = false; btn.textContent = t('next') + ' \u2192'; return; }
+      const r = await fetch('/api/setup/backend', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(payload)
+      });
+      const d = await r.json();
+      if (!r.ok) { showError(t('err_' + d.error) || d.error); btn.disabled = false; btn.textContent = t('next') + ' \u2192'; return; }
+    }
+    showError('');
+    showStep(3);
+    scanLibraries();
+  } catch(e) { showError(e.message); }
+  btn.disabled = false; btn.textContent = t('next') + ' \u2192';
+}
+
+async function scanLibraries() {
+  try {
+    const r = await fetch('/api/refresh', {method: 'POST'});
+    const d = await r.json();
+    document.getElementById('library-status').style.display = 'none';
+    document.getElementById('library-results').style.display = '';
+    const stats = document.getElementById('lib-stats');
+    stats.innerHTML = '<div class="stat-card"><div class="stat-num">' + (d.items || 0) + '</div><div class="stat-label">' + t('media_items') + '</div></div>';
+    const libItems = await fetch('/api/library').then(r => r.json());
+    const container = document.getElementById('lib-items');
+    if (libItems.count > 0) {
+      const types = {};
+      libItems.items.forEach(it => { types[it.type] = (types[it.type]||0) + 1; });
+      let html = '<div class="stat-cards">';
+      for (const [ty, c] of Object.entries(types)) {
+        html += '<div class="stat-card"><div class="stat-num">' + c + '</div><div class="stat-label">' + ty.charAt(0).toUpperCase() + ty.slice(1) + '</div></div>';
+      }
+      html += '</div>';
+      container.innerHTML = html;
+    } else {
+      container.innerHTML = '<p class="muted">' + t('no_items_found') + '</p>';
+    }
+  } catch(e) {
+    document.getElementById('library-status').innerHTML = '<p class="muted">' + t('scan_failed') + '</p>';
+  }
+}
+
+async function finishSetup() {
+  try { await fetch('/api/setup/finish', {method: 'POST'}); } catch(e) {}
+  window.location.href = '/login';
+}
+</script>
+</body>
+</html>

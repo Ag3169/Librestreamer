@@ -117,15 +117,10 @@ CREATE INDEX IF NOT EXISTS idx_metrics_backend ON metrics_history(backend);
 CREATE INDEX IF NOT EXISTS idx_metrics_time ON metrics_history(timestamp);
 """)
     conn.commit()
-    # seed default admin
-    row = conn.execute("SELECT COUNT(*) as c FROM users WHERE username='admin'").fetchone()
-    if row["c"] == 0:
-        from ..auth import hash_password
-        conn.execute(
-            "INSERT INTO users (username, password_hash, is_admin, created_at) VALUES (?,?,?,?)",
-            ("admin", hash_password("admin"), 1, time.time())
-        )
-        conn.commit()
+
+
+def count_users(conn: sqlite3.Connection) -> int:
+    return conn.execute("SELECT COUNT(*) as c FROM users").fetchone()["c"]
 
 
 # ---- user operations ----

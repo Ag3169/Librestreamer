@@ -178,6 +178,21 @@ def create_app(funnel_path: str, data_dir: str = "./data") -> FastAPI:
             request.state.user_id = 0
             return await call_next(request)
 
+        # Setup mode: no users exist yet — only allow /setup
+        is_first_run = db.count_users(state.conn) == 0
+        if is_first_run:
+            if path == "/setup" or path.startswith("/api/setup/"):
+                request.state.user = None
+                request.state.user_id = 0
+                return await call_next(request)
+            if path.startswith("/api/"):
+                return JSONResponse({"error": "setup_required"}, status_code=503)
+            return RedirectResponse(url="/setup", status_code=302)
+
+        # After setup is done, block /setup
+        if path == "/setup":
+            return RedirectResponse(url="/", status_code=302)
+
         session_cookie = request.cookies.get("ls_session")
         user_id = None
         if session_cookie:

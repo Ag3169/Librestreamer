@@ -274,4 +274,114 @@ def get_router(state) -> APIRouter:
         db.change_password(state.conn, user["username"], hash_password(new_password))
         return RedirectResponse(url="/preferences?ok=1", status_code=302)
 
+    # ---- first-run setup wizard ----
+
+    @router.get("/setup", response_class=HTMLResponse)
+    async def setup_page(request: Request):
+        if db.count_users(state.conn) > 0:
+            return RedirectResponse(url="/", status_code=302)
+        return templates.TemplateResponse(request, "setup.html",
+            _ctx(request, state))
+
+    @router.post("/api/setup/admin")
+    async def setup_create_admin(request: Request, payload: dict = None):
+        if db.count_users(state.conn) > 0:
+            return JSONResponse({"error": "setup_already_done"}, status_code=400)
+        payload = payload or {}
+        username = (payload.get("username") or "").strip()
+        password = payload.get("password") or ""
+        if not username or len(username) < 2:
+            return JSONResponse({"error": "username_too_short"}, status_code=400)
+        if len(password) < 4:
+            return JSONResponse({"error": "password_too_short"}, status_code=400)
+        db.add_user(state.conn, username, hash_password(password), is_admin=True)
+        return JSONResponse({"status": "ok"})
+
+    @router.post("/api/setup/backend")
+    async def setup_add_backend(request: Request, payload: dict = None):
+        if db.count_users(state.conn) == 0:
+            return JSONResponse({"error": "create_admin_first"}, status_code=400)
+        payload = payload or {}
+        btype = payload.get("type", "librestreamer")
+        name = (payload.get("name") or "").strip()
+        if not name:
+            return JSONResponse({"error": "name_required"}, status_code=400)
+        b = {"name": name, "type": btype, "enabled": True,
+             "priority": int(payload.get("priority", 1)),
+             "max_streams": int(payload.get("max_streams", 4))}
+        if btype == "librestreamer":
+            b["host"] = payload.get("host", "127.0.0.1")
+            b["port"] = int(payload.get("port", 8080))
+            b["secret"] = payload.get("secret", "")
+            if not b["secret"]:
+                return JSONResponse({"error": "secret_required"}, status_code=400)
+        elif btype == "jellyfin":
+            b["host"] = payload.get("host", "")
+            b["port"] = int(payload.get("port", 8096))
+            b["api_key"] = payload.get("api_key", "")
+            b["ssl"] = bool(payload.get("ssl", False))
+            b["user_id"] = payload.get("user_id", "")
+            if not b["api_key"]:
+                return JSONResponse({"error": "api_key_required"}, status_code=400)
+        db.upsert_backend(state.conn, b)
+        state.reload_clients()
+        state.refresh_libraries()
+        state.persist_funnel()
+        return JSONResponse({"status": "ok"})
+
+    @router.post("/api/setup/local-backend")
+    async def setup_start_local_backend(request: Request, payload: dict = None):
+        if db.count_users(state.conn) == 0:
+            return JSONResponse({"error": "create_admin_first"}, status_code=400)
+        payload = payload or {}
+        media_paths = payload.get("media_paths", [])
+        if not media_paths:
+            return JSONResponse({"error": "media_paths_required"}, status_code=400)
+        import subprocess, secrets as pysecrets
+        secret = pysecrets.token_hex(16)
+        port = int(payload.get("port", 8080))
+        name = payload.get("name") or "Local Backend"
+        data_dir = os.path.join(state.data_dir, "local-backend")
+        os.makedirs(data_dir, exist_ok=True)
+        config = {
+            "server": {
+                "id": "local-1", "name": name,
+                "host": "127.0.0.1", "port": port,
+                "data_dir": data_dir,
+                "media_paths": media_paths,
+                "transcoding": {"enabled": False, "hardware_accel": "none", "max_concurrent_streams": 4}
+            },
+            "frontend": {
+                "enabled": True,
+                "frontend_host": "127.0.0.1",
+                "frontend_port": int(payload.get("frontend_port", 3000)),
+                "secret": secret,
+                "heartbeat_interval": 10
+            },
+            "monitoring": {"enabled": False, "metrics_port": 0}
+        }
+        config_path = os.path.join(state.data_dir, "local-backend-config.json")
+        with open(config_path, "w") as f:
+            json.dump(config, f, indent=2)
+        backend_bin = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(_here)))), "backend", "librestreamer-server")
+        if not os.path.exists(backend_bin):
+            return JSONResponse({"error": "backend_binary_not_found", "hint": "Build the Go backend first"}, status_code=500)
+        log_path = os.path.join(state.data_dir, "local-backend.log")
+        lf = open(log_path, "a")
+        proc = subprocess.Popen([backend_bin, "-config", config_path], stdout=lf, stderr=lf, stdin=subprocess.DEVNULL, start_new_session=True)
+        with open(os.path.join(state.data_dir, "local-backend.pid"), "w") as f:
+            f.write(str(proc.pid))
+        b = {"name": name, "type": "librestreamer", "host": "127.0.0.1", "port": port,
+             "secret": secret, "enabled": True, "priority": 1, "max_streams": 4}
+        db.upsert_backend(state.conn, b)
+        state.reload_clients()
+        state.persist_funnel()
+        return JSONResponse({"status": "ok", "secret": secret, "port": port})
+
+    @router.post("/api/setup/finish")
+    async def setup_finish(request: Request):
+        if db.count_users(state.conn) == 0:
+            return JSONResponse({"error": "no_admin"}, status_code=400)
+        return JSONResponse({"status": "ok"})
+
     return router

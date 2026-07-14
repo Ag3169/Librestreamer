@@ -5,12 +5,31 @@ Run it as a single all-in-one server or split into separate frontend/backend nod
 
 ## Quick Start
 
+### One-line install (recommended)
+
 ```bash
+curl -fsSL https://raw.githubusercontent.com/Ag3169/Librestreamer/main/install.sh | bash
+```
+
+This downloads, builds, and starts LibreStreamer. Then open `http://localhost:3000`
+in your browser to complete the **setup wizard**:
+1. Create your admin account (no more default admin/admin)
+2. Choose your backend type:
+   - **Local Backend** — run a media backend on this machine, point it at your media folders
+   - **Remote Backend** — connect to a LibreStreamer backend on another machine
+   - **Jellyfin** — connect to an existing Jellyfin server via its API
+3. Libraries are scanned automatically and you're ready to stream
+
+### Manual setup
+
+```bash
+git clone https://github.com/Ag3169/Librestreamer.git
+cd Librestreamer
 ./setup.sh          # interactive setup (single or multi server)
 ./setup.sh stop     # stop
 ```
 
-Default login: `admin` / `admin`
+Then open `http://localhost:3000` and follow the setup wizard.
 
 ```
  ┌──────────────┐      ┌──────────────┐

@@ -228,12 +228,37 @@ run_tests(){
   r=$(curl -s --max-time 5 -H "X-Librestreamer-Secret: $SECRET" "http://127.0.0.1:$B2_PORT/health" 2>/dev/null || echo "")
   if echo "$r" | grep -q '"ok"'; then pass "backend 2 health"; else fail "backend 2 health: $r"; fi
 
+  # ── setup wizard ──────────────────────────────────────────────────────
+  echo ""
+  bold "Setup Wizard"
+
+  # Should redirect to /setup when no users exist
+  r=$(curl -s --max-time 5 -o /dev/null -w "%{http_code}" "$FE/")
+  if [ "$r" = "302" ]; then pass "redirects to setup on first run"; else fail "first run redirect: $r"; fi
+
+  r=$(curl -s --max-time 5 -o /dev/null -w "%{http_code}" "$FE/setup")
+  if [ "$r" = "200" ]; then pass "setup page accessible"; else fail "setup page: $r"; fi
+
+  # Create admin via setup API
+  r=$(curl -s --max-time 5 -X POST -H "Content-Type: application/json" \
+    -d '{"username":"admin","password":"admin"}' \
+    "$FE/api/setup/admin" 2>/dev/null || echo "")
+  if echo "$r" | grep -q '"ok"'; then pass "create admin via setup wizard"; else fail "setup admin: $r"; fi
+
+  # Setup page should redirect after admin created
+  r=$(curl -s --max-time 5 -o /dev/null -w "%{http_code}" "$FE/setup")
+  if [ "$r" = "302" ]; then pass "setup page blocked after admin created"; else fail "setup page after admin: $r"; fi
+
   # ── auth ────────────────────────────────────────────────────────────────
   echo ""
   bold "Authentication"
 
   curl -s --max-time 5 -c "$C" -d "username=admin&password=admin" -L -o /dev/null "$FE/login"
   if [ -s "$C" ]; then pass "login as admin"; else fail "login as admin"; fi
+
+  # Refresh libraries (backends may have registered after initial scan)
+  curl -s --max-time 10 -b "$C" -X POST "$FE/api/refresh" >/dev/null 2>&1
+  sleep 2
 
   r=$(curl -s --max-time 5 "$FE/api/library" 2>/dev/null || echo "")
   if echo "$r" | grep -q "unauthorized"; then pass "unauth API blocked"; else fail "unauth API blocked: $r"; fi
