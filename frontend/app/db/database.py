@@ -115,6 +115,13 @@ CREATE TABLE IF NOT EXISTS metrics_history (
 
 CREATE INDEX IF NOT EXISTS idx_metrics_backend ON metrics_history(backend);
 CREATE INDEX IF NOT EXISTS idx_metrics_time ON metrics_history(timestamp);
+
+CREATE TABLE IF NOT EXISTS favorites (
+    user_id INTEGER NOT NULL,
+    item_id TEXT NOT NULL,
+    added_at REAL DEFAULT 0,
+    PRIMARY KEY (user_id, item_id)
+);
 """)
     conn.commit()
 
@@ -273,6 +280,33 @@ def get_media_items(conn: sqlite3.Connection, type_filter: str | None = None) ->
         return conn.execute("SELECT * FROM media_items WHERE type=? ORDER BY title", (type_filter,)).fetchall()
     return conn.execute("SELECT * FROM media_items ORDER BY title").fetchall()
 
+def get_media_paginated(conn: sqlite3.Connection, type_filter: str | None = None,
+                        sort: str = "title", page: int = 1, per_page: int = 48) -> tuple[list[sqlite3.Row], int]:
+    offset = (page - 1) * per_page
+    sort_map = {"title": "title", "year": "year DESC", "recent": "updated_at DESC", "duration": "duration DESC"}
+    order = sort_map.get(sort, "title")
+    if type_filter:
+        total = conn.execute("SELECT COUNT(*) as c FROM media_items WHERE type=?", (type_filter,)).fetchone()["c"]
+        rows = conn.execute(f"SELECT * FROM media_items WHERE type=? ORDER BY {order} LIMIT ? OFFSET ?",
+                           (type_filter, per_page, offset)).fetchall()
+    else:
+        total = conn.execute("SELECT COUNT(*) as c FROM media_items").fetchone()["c"]
+        rows = conn.execute(f"SELECT * FROM media_items ORDER BY {order} LIMIT ? OFFSET ?",
+                           (per_page, offset)).fetchall()
+    return rows, total
+
+def get_recent_items(conn: sqlite3.Connection, limit: int = 12) -> list[sqlite3.Row]:
+    return conn.execute("SELECT * FROM media_items WHERE type IN ('movie','show') ORDER BY updated_at DESC LIMIT ?", (limit,)).fetchall()
+
+def get_similar_items(conn: sqlite3.Connection, item_id: str, limit: int = 6) -> list[sqlite3.Row]:
+    item = conn.execute("SELECT type,year FROM media_items WHERE id=?", (item_id,)).fetchone()
+    if not item:
+        return []
+    return conn.execute(
+        "SELECT * FROM media_items WHERE id!=? AND type=? AND year BETWEEN ? AND ? ORDER BY RANDOM() LIMIT ?",
+        (item_id, item["type"], max(0, item["year"] - 2), item["year"] + 2, limit)
+    ).fetchall()
+
 def get_media_item(conn: sqlite3.Connection, item_id: str) -> sqlite3.Row | None:
     return conn.execute("SELECT * FROM media_items WHERE id=?", (item_id,)).fetchone()
 
@@ -335,3 +369,28 @@ def get_metrics_history(conn: sqlite3.Connection, backend: str, limit: int = 60)
         "SELECT * FROM metrics_history WHERE backend=? ORDER BY timestamp DESC LIMIT ?",
         (backend, limit)
     ).fetchall()
+
+
+# ---- favorites ----
+
+def toggle_favorite(conn: sqlite3.Connection, user_id: int, item_id: str) -> bool:
+    row = conn.execute("SELECT 1 FROM favorites WHERE user_id=? AND item_id=?", (user_id, item_id)).fetchone()
+    if row:
+        conn.execute("DELETE FROM favorites WHERE user_id=? AND item_id=?", (user_id, item_id))
+        conn.commit()
+        return False
+    conn.execute("INSERT INTO favorites (user_id, item_id, added_at) VALUES (?,?,?)", (user_id, item_id, time.time()))
+    conn.commit()
+    return True
+
+def is_favorite(conn: sqlite3.Connection, user_id: int, item_id: str) -> bool:
+    return conn.execute("SELECT 1 FROM favorites WHERE user_id=? AND item_id=?", (user_id, item_id)).fetchone() is not None
+
+def get_favorites(conn: sqlite3.Connection, user_id: int) -> list[sqlite3.Row]:
+    rows = conn.execute("SELECT item_id FROM favorites WHERE user_id=? ORDER BY added_at DESC", (user_id,)).fetchall()
+    items = []
+    for r in rows:
+        item = conn.execute("SELECT * FROM media_items WHERE id=?", (r["item_id"],)).fetchone()
+        if item:
+            items.append(item)
+    return items

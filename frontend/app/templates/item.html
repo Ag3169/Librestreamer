@@ -1,33 +1,131 @@
 {% extends "base.html" %}
 {% block title %}LibreStreamer &middot; {{ item['title'] }}{% endblock %}
 {% block content %}
-<section class="detail">
-  <div class="poster" id="poster">
-    <img id="poster-img" alt="">
-  </div>
-  <div class="meta">
-    <h1 id="item-name">{{ item['title'] }}</h1>
-    <div id="item-sub" class="sub"></div>
-    <div id="item-sources" class="sources"></div>
-    <div class="actions">
-      {% if item['type'] in ('movie', 'episode', 'music') %}
-      <a class="play" id="play-link" href="/watch/{{ item['id'] }}">{{ t("item.play") }}</a>
+<div class="detail-hero">
+  {% if item['has_thumbnail'] %}
+  <div class="detail-hero-bg" style="background-image:url('/api/thumbnail/{{ item['id'] }}')"></div>
+  {% endif %}
+  <div class="detail">
+    <div class="poster">
+      {% if item['has_thumbnail'] %}
+      <img src="/api/thumbnail/{{ item['id'] }}" alt="{{ item['title'] }}">
+      {% else %}
+      <img src="/static/favicon.svg" alt="{{ item['title'] }}" style="object-fit:contain;padding:40px">
       {% endif %}
     </div>
+    <div class="meta">
+      <h1>{{ item['title'] }}</h1>
+      <div class="sub">
+        {% if item['type'] %}<span class="tag">{{ item['type']|capitalize }}</span>{% endif %}
+        {% if item['year'] %}<span class="tag">{{ item['year'] }}</span>{% endif %}
+        {% if item['duration'] %}<span class="tag">{{ (item['duration'] / 60)|round(0) }} min</span>{% endif %}
+        {% if item['resolution'] %}<span class="tag">{{ item['resolution'] }}</span>{% endif %}
+        {% if item['codec'] %}<span class="tag">{{ item['codec'] }}</span>{% endif %}
+        {% if item['size'] %}<span class="tag">{{ '%.1f'|format(item['size'] / 1073741824) }} GB</span>{% endif %}
+      </div>
+      {% if item['type'] in ('movie', 'episode', 'music') %}
+      <div class="actions">
+        <a class="play" href="/watch/{{ item['id'] }}">{{ t("item.play") }}</a>
+        {% if item['type'] == 'movie' or item['type'] == 'episode' %}
+        <button class="btn-icon" onclick="toggleFav('{{ item['id'] }}')" id="fav-btn">&#9734;</button>
+        {% endif %}
+      </div>
+      {% endif %}
+      {% if item['sources'] %}
+      <div class="sources">
+        {% for name in item['sources'].keys() if item['sources'] is mapping %}
+        <span class="chip">{{ name }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <div class="info-grid">
+        {% if item['show_name'] %}<div class="info-item"><div class="label">{{ t("item.show") }}</div><div class="value">{{ item['show_name'] }}</div></div>{% endif %}
+        {% if item['season'] %}<div class="info-item"><div class="label">{{ t("item.season") }}</div><div class="value">{{ item['season'] }}</div></div>{% endif %}
+        {% if item['episode'] %}<div class="info-item"><div class="label">{{ t("item.episode_num") }}</div><div class="value">{{ item['episode'] }}</div></div>{% endif %}
+        {% if item['mime_type'] %}<div class="info-item"><div class="label">{{ t("item.format") }}</div><div class="value">{{ item['mime_type'] }}</div></div>{% endif %}
+        <div class="info-item"><div class="label">{{ t("item.backend") }}</div><div class="value">{{ item['backend'] }}</div></div>
+      </div>
+    </div>
   </div>
-</section>
+</div>
+
 {% if children %}
 <section class="row">
   <h2>{{ t("item.episodes") }}</h2>
-  <div class="card-row" id="children"></div>
+  <div class="season-selector" id="season-selector"></div>
+  <div class="episode-list" id="episode-list">
+    {% for c in children %}
+    <div class="episode-item" data-season="{{ c['season'] }}" onclick="location.href='/watch/{{ c['id'] }}'">
+      {% if c['has_thumbnail'] %}
+      <div class="ep-thumb" style="background-image:url('/api/thumbnail/{{ c['id'] }}')"></div>
+      {% else %}
+      <div class="ep-thumb empty">&#127916;</div>
+      {% endif %}
+      <div class="ep-info">
+        <div class="ep-num">S{{ '%02d'|format(c['season']) }}E{{ '%02d'|format(c['episode']) }}</div>
+        <div class="ep-title">{{ c['title'] }}</div>
+        {% if c['duration'] %}<div class="ep-desc">{{ (c['duration'] / 60)|round(0) }} min{% if c['year'] %} &middot; {{ c['year'] }}{% endif %}</div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+<script>
+(function(){
+  const eps = document.querySelectorAll('.episode-item');
+  const seasons = [...new Set([...eps].map(e => e.dataset.season))];
+  const sel = document.getElementById('season-selector');
+  seasons.forEach((s, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'season-btn' + (i === 0 ? ' active' : '');
+    btn.textContent = '{{ t("item.season") }} ' + s;
+    btn.onclick = () => {
+      document.querySelectorAll('.season-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      eps.forEach(e => e.style.display = (e.dataset.season === s ? '' : 'none'));
+    };
+    sel.appendChild(btn);
+  });
+  if (seasons.length > 0) eps.forEach(e => e.style.display = (e.dataset.season === seasons[0] ? '' : 'none'));
+})();
+</script>
+{% endif %}
+
+{% if similar %}
+<section class="row">
+  <h2>{{ t("item.similar") }}</h2>
+  <div class="card-row">
+    {% for s in similar %}
+    <div class="card" onclick="location.href='/item/{{ s['id'] }}'">
+      {% if s['has_thumbnail'] %}
+      <div class="thumb" style="background-image:url('/api/thumbnail/{{ s['id'] }}')"></div>
+      {% else %}
+      <div class="thumb empty">&#127916;</div>
+      {% endif %}
+      <div class="info">
+        <div class="name">{{ s['title'] }}</div>
+        {% if s['year'] %}<div class="sub">{{ s['year'] }}</div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
 </section>
 {% endif %}
 {% endblock %}
 {% block scripts %}
 <script>
-  window.ITEM_ID = {{ item['id']|tojson }};
-  window.ITEM_TYPE = {{ item['type']|tojson }};
-  window.ITEM_THUMB = {{ item['has_thumbnail']|tojson }};
-  window.CHILDREN = {{ children_json|tojson }};
+window.ITEM_ID = {{ item['id']|tojson }};
+window.ITEM_TYPE = {{ item['type']|tojson }};
+window.ITEM_THUMB = {{ item['has_thumbnail']|tojson }};
+window.CHILDREN = {{ children_json|tojson }};
+
+function toggleFav(id) {
+  fetch('/api/favorites/' + id, {method:'POST'}).then(r => r.json()).then(d => {
+    const btn = document.getElementById('fav-btn');
+    btn.innerHTML = d.favorited ? '\u2605' : '\u2634';
+    btn.style.color = d.favorited ? 'var(--accent)' : '';
+  });
+}
+(function(){ if(window.ITEM_ID) fetch('/api/favorites/' + window.ITEM_ID).then(r=>r.json()).then(d=>{if(d.favorited){const b=document.getElementById('fav-btn');if(b){b.innerHTML='\u2605';b.style.color='var(--accent)'}}}).catch(()=>{}); })();
 </script>
 {% endblock %}

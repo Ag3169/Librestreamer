@@ -4,47 +4,73 @@
 <section class="player-wrap">
   <a href="/item/{{ item['id'] }}" class="back">&larr; {{ t("player.back") }}</a>
   <h1>{{ item['title'] }}</h1>
+  {% if item['show_name'] and item['type'] == 'episode' %}
+  <p class="muted" style="margin:4px 0 12px">{{ item['show_name'] }} &middot; S{{ '%02d'|format(item['season']) }}E{{ '%02d'|format(item['episode']) }}</p>
+  {% endif %}
   <div class="player-box">
     {% if item['type'] == 'music' %}
     <audio id="player" controls autoplay src="/api/stream/{{ item['id'] }}"></audio>
     {% else %}
-    <video id="player" controls autoplay>
+    <video id="player" controls autoplay poster="{% if item['has_thumbnail'] %}/api/thumbnail/{{ item['id'] }}{% endif %}">
       <source src="/api/stream/{{ item['id'] }}" type="{{ item['mime_type'] or 'video/mp4' }}">
     </video>
     {% endif %}
   </div>
-  <div id="stream-status" class="stream-status"></div>
+  <div class="stream-status">
+    <span class="status-dot"></span>
+    <span id="stream-status-text">{{ t("player.playing") }}</span>
+    {% if item['resolution'] %}<span>&middot; {{ item['resolution'] }}</span>{% endif %}
+    {% if item['codec'] %}<span>&middot; {{ item['codec'] }}</span>{% endif %}
+    {% if item['duration'] %}<span>&middot; {{ (item['duration'] / 60)|round(0) }} min</span>{% endif %}
+    <span class="spacer" style="flex:1"></span>
+    <button class="btn-icon" onclick="toggleFs()" style="width:32px;height:32px;font-size:14px">&#26F6;</button>
+  </div>
 </section>
 {% endblock %}
 {% block scripts %}
 <script>
-  (function(){
-    const p = document.getElementById('player');
-    const s = document.getElementById('stream-status');
-    const itemId = {{ item['id']|tojson }};
-    let lastReport = 0;
-    if (!p) return;
-    function report(finished) {
-      const now = Date.now();
-      if (!finished && now - lastReport < 5000) return;
-      lastReport = now;
-      fetch('/api/progress', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          item_id: itemId,
-          position: Math.floor(p.currentTime || 0),
-          duration: Math.floor(p.duration || 0),
-          finished: finished || false,
-        })
-      });
-    }
-    p.addEventListener('timeupdate', () => report(false));
-    p.addEventListener('ended', () => report(true));
-    p.addEventListener('pause', () => report(false));
-    p.addEventListener('error', () => { if(s) s.textContent = '{{ t("player.stream_error") }}'; });
-    p.addEventListener('playing', () => { if(s) s.textContent = '{{ t("player.playing") }}'; });
-    p.addEventListener('waiting', () => { if(s) s.textContent = '{{ t("player.buffering") }}'; });
-  })();
+(function(){
+  const p = document.getElementById('player');
+  const s = document.getElementById('stream-status-text');
+  const itemId = {{ item['id']|tojson }};
+  let lastReport = 0;
+  if (!p) return;
+
+  function report(finished) {
+    const now = Date.now();
+    if (!finished && now - lastReport < 5000) return;
+    lastReport = now;
+    fetch('/api/progress', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        item_id: itemId,
+        position: Math.floor(p.currentTime || 0),
+        duration: Math.floor(p.duration || 0),
+        finished: finished || false,
+      })
+    });
+  }
+  p.addEventListener('timeupdate', () => report(false));
+  p.addEventListener('ended', () => report(true));
+  p.addEventListener('pause', () => report(false));
+  p.addEventListener('error', () => { if(s) s.textContent = '{{ t("player.stream_error") }}'; });
+  p.addEventListener('playing', () => { if(s) s.textContent = '{{ t("player.playing") }}'; });
+  p.addEventListener('waiting', () => { if(s) s.textContent = '{{ t("player.buffering") }}'; });
+
+  document.addEventListener('keydown', (e) => {
+    if (!p || e.target.tagName === 'INPUT') return;
+    if (e.code === 'Space') { e.preventDefault(); p.paused ? p.play() : p.pause(); }
+    if (e.code === 'ArrowLeft') { e.preventDefault(); p.currentTime -= 10; }
+    if (e.code === 'ArrowRight') { e.preventDefault(); p.currentTime += 10; }
+    if (e.code === 'KeyF') { toggleFs(); }
+  });
+})();
+
+function toggleFs() {
+  const p = document.getElementById('player');
+  if (!document.fullscreenElement) p.requestFullscreen?.();
+  else document.exitFullscreen?.();
+}
 </script>
 {% endblock %}

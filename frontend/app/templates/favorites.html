@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}LibreStreamer &middot; {{ t("favorites.title") }}{% endblock %}
+{% block content %}
+<section>
+  <h2>{{ t("favorites.title") }}</h2>
+  {% if items %}
+  <div class="card-row">
+    {% for it in items %}
+    <div class="card" onclick="location.href='/item/{{ it['id'] }}'">
+      {% if it['has_thumbnail'] %}
+      <div class="thumb" style="background-image:url('/api/thumbnail/{{ it['id'] }}')"></div>
+      {% else %}
+      <div class="thumb empty">&#127916;</div>
+      {% endif %}
+      <div class="info">
+        <div class="name">{{ it['title'] }}</div>
+        {% if it['year'] %}<div class="sub">{{ it['year'] }}</div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <p>{{ t("favorites.empty") }}</p>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

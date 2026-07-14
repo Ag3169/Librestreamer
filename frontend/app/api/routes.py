@@ -166,6 +166,31 @@ def get_router(state) -> APIRouter:
         rows = db.search_media(state.conn, q, limit)
         return {"count": len(rows), "items": [_item_to_dict(r) for r in rows]}
 
+    # ---- favorites ----
+
+    @router.get("/api/favorites")
+    async def api_favorites(request: Request):
+        user_id = getattr(request.state, "user_id", 0) or 0
+        if not user_id:
+            return {"items": []}
+        rows = db.get_favorites(state.conn, user_id)
+        return {"items": [_item_to_dict(r) for r in rows]}
+
+    @router.post("/api/favorites/{item_id}")
+    async def api_toggle_favorite(item_id: str, request: Request):
+        user_id = getattr(request.state, "user_id", 0) or 0
+        if not user_id:
+            raise HTTPException(401)
+        favorited = db.toggle_favorite(state.conn, user_id, item_id)
+        return {"favorited": favorited}
+
+    @router.get("/api/favorites/{item_id}")
+    async def api_check_favorite(item_id: str, request: Request):
+        user_id = getattr(request.state, "user_id", 0) or 0
+        if not user_id:
+            return {"favorited": False}
+        return {"favorited": db.is_favorite(state.conn, user_id, item_id)}
+
     @router.get("/api/history")
     async def api_history(request: Request):
         user_id = getattr(request.state, "user_id", 0) or 0

@@ -1,26 +1,46 @@
 {% extends "base.html" %}
 {% block title %}LibreStreamer &middot; {{ t("search.title") }}{% endblock %}
 {% block content %}
-<section class="row">
+<section>
   <h2>{{ t("search.results", query=query) }}</h2>
+
   {% if results %}
+  <div class="search-filters">
+    <button class="active" onclick="filterResults('')">{{ t("library.all") }}</button>
+    <button onclick="filterResults('movie')">{{ t("nav.movies") }}</button>
+    <button onclick="filterResults('show')">{{ t("nav.shows") }}</button>
+    <button onclick="filterResults('episode')">{{ t("nav.episodes") }}</button>
+    <button onclick="filterResults('music')">{{ t("nav.music") }}</button>
+  </div>
   <div class="card-row" id="search-grid">
     {% for r in results %}
-    <div class="card" onclick="location.href='/item/{{ r['id'] }}'">
+    <div class="card search-card" data-type="{{ r['type'] }}" onclick="location.href='/item/{{ r['id'] }}'">
       {% if r['has_thumbnail'] %}
       <div class="thumb" style="background-image:url('/api/thumbnail/{{ r['id'] }}')"></div>
       {% else %}
       <div class="thumb empty">&#127916;</div>
       {% endif %}
+      {% if r['type'] %}<div class="card-badge {{ r['type'] }}">{{ r['type'] }}</div>{% endif %}
       <div class="info">
         <div class="name">{{ r['title'] }}</div>
-        <div class="sub">{{ r['type']|capitalize }}{% if r['year'] %} &middot; {{ r['year'] }}{% endif %}</div>
+        <div class="sub">{{ r['type']|capitalize }}{% if r['year'] %} &middot; {{ r['year'] }}{% endif %}{% if r['show_name'] %} &middot; {{ r['show_name'] }}{% endif %}</div>
       </div>
     </div>
     {% endfor %}
   </div>
   {% else %}
-  <p class="muted">{{ t("search.no_results") }}</p>
+  <div class="empty-state">
+    <p>{{ t("search.no_results") }}</p>
+  </div>
   {% endif %}
 </section>
+<script>
+function filterResults(type) {
+  document.querySelectorAll('.search-filters button').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  document.querySelectorAll('.search-card').forEach(c => {
+    c.style.display = (!type || c.dataset.type === type) ? '' : 'none';
+  });
+}
+</script>
 {% endblock %}

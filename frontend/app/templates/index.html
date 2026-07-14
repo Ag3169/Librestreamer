@@ -9,13 +9,13 @@
 {% if history %}
 <section class="row">
   <h2>{{ t("index.continue_watching") }}</h2>
-  <div class="card-row" id="history-grid">
+  <div class="scroll-row" id="history-scroll">
     {% for h in history %}
     <div class="card" onclick="location.href='/watch/{{ h['id'] }}'">
       {% if h['has_thumbnail'] %}
-      <div class="thumb" style="background-image:url('/api/thumbnail/{{ h['id'] }}')"></div>
+      <div class="thumb wide" style="background-image:url('/api/thumbnail/{{ h['id'] }}')"></div>
       {% else %}
-      <div class="thumb empty">&#127916;</div>
+      <div class="thumb wide empty">&#127916;</div>
       {% endif %}
       <div class="info">
         <div class="name">{{ h['title'] }}</div>
@@ -30,13 +30,34 @@
 </section>
 {% endif %}
 
+{% if recent %}
 <section class="row">
-  <h2>{{ t("index.movies") }}</h2>
+  <h2>{{ t("index.recently_added") }}</h2>
+  <div class="scroll-row" id="recent-scroll">
+    {% for r in recent %}
+    <div class="card" onclick="location.href='/item/{{ r['id'] }}'">
+      {% if r['has_thumbnail'] %}
+      <div class="thumb" style="background-image:url('/api/thumbnail/{{ r['id'] }}')"></div>
+      {% else %}
+      <div class="thumb empty">&#127916;</div>
+      {% endif %}
+      <div class="info">
+        <div class="name">{{ r['title'] }}</div>
+        {% if r['year'] %}<div class="sub">{{ r['year'] }}</div>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="row">
+  <h2>{{ t("index.movies") }} <a href="/library?type=movie" class="see-all">{{ t("index.see_all") }}</a></h2>
   <div class="card-row" id="movies"></div>
 </section>
 
 <section class="row">
-  <h2>{{ t("index.shows") }}</h2>
+  <h2>{{ t("index.shows") }} <a href="/library?type=show" class="see-all">{{ t("index.see_all") }}</a></h2>
   <div class="card-row" id="shows"></div>
 </section>
 

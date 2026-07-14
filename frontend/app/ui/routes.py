@@ -109,13 +109,20 @@ def get_router(state) -> APIRouter:
                          "duration": r["duration"],
                          "has_thumbnail": bool(item["has_thumbnail"])}
                     history.append(d)
+        recent = [dict(r) for r in db.get_recent_items(state.conn, limit=12)]
         return templates.TemplateResponse(request, "index.html",
-            _ctx(request, state, backend_count=len(state.clients), history=history))
+            _ctx(request, state, backend_count=len(state.clients), history=history, recent=recent))
 
     @router.get("/library", response_class=HTMLResponse)
-    async def library_page(request: Request, type: str = ""):
+    async def library_page(request: Request, type: str = "", sort: str = "title", page: int = 1):
+        rows, total = db.get_media_paginated(state.conn, type or None, sort, page, 48)
+        total_pages = max(1, (total + 47) // 48)
+        items = [dict(r) for r in rows]
+        user = getattr(request.state, "user", None)
+        is_admin = bool(user and user["is_admin"])
         return templates.TemplateResponse(request, "library.html",
-            _ctx(request, state, item_type=type))
+            _ctx(request, state, item_type=type, items=items, total=total,
+                 sort=sort, page=page, total_pages=total_pages, is_admin=is_admin))
 
     @router.get("/item/{item_id}", response_class=HTMLResponse)
     async def item_page(request: Request, item_id: str):
@@ -124,8 +131,17 @@ def get_router(state) -> APIRouter:
             raise HTTPException(404)
         children = db.get_children(state.conn, item_id)
         children_json = [dict(c) for c in children]
+        sources = {}
+        try:
+            import json as _json
+            sources = _json.loads(row["sources"]) if row["sources"] else {}
+        except Exception:
+            pass
+        item = dict(row)
+        item["sources"] = sources
+        similar = [dict(s) for s in db.get_similar_items(state.conn, item_id)]
         return templates.TemplateResponse(request, "item.html",
-            _ctx(request, state, item=row, children=children, children_json=children_json))
+            _ctx(request, state, item=item, children=children, children_json=children_json, similar=similar))
 
     @router.get("/watch/{item_id}", response_class=HTMLResponse)
     async def watch_page(request: Request, item_id: str):
@@ -140,6 +156,13 @@ def get_router(state) -> APIRouter:
         rows = db.search_media(state.conn, q) if q else []
         return templates.TemplateResponse(request, "search.html",
             _ctx(request, state, query=q, results=rows))
+
+    @router.get("/favorites", response_class=HTMLResponse)
+    async def favorites_page(request: Request):
+        user_id = getattr(request.state, "user_id", 0) or 0
+        rows = db.get_favorites(state.conn, user_id) if user_id else []
+        return templates.TemplateResponse(request, "favorites.html",
+            _ctx(request, state, items=rows))
 
     # ---- admin pages ----
 

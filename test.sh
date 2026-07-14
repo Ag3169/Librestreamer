@@ -450,6 +450,25 @@ for b in backends:
   sc=$(echo "$r" | python3 -c "import sys,json; print(json.load(sys.stdin)['count'])" 2>/dev/null || echo "0")
   if [ "$sc" -ge 1 ]; then pass "search 'Matrix': $sc results"; else fail "search 'Matrix': $sc"; fi
 
+  # ── favorites ───────────────────────────────────────────────────────────
+  echo ""
+  bold "Favorites"
+
+  if [ -n "$MID" ]; then
+    r=$(curl -s --max-time 5 -b "$C" -X POST "$FE/api/favorites/$MID" 2>/dev/null || echo "")
+    if echo "$r" | grep -q '"favorited":true'; then pass "add favorite"; else fail "add favorite: $r"; fi
+
+    r=$(curl -s --max-time 5 -b "$C" "$FE/api/favorites/$MID" 2>/dev/null || echo "")
+    if echo "$r" | grep -q '"favorited":true'; then pass "check favorite"; else fail "check favorite: $r"; fi
+
+    r=$(curl -s --max-time 5 -b "$C" "$FE/api/favorites" 2>/dev/null || echo '{"items":[]}')
+    fc=$(echo "$r" | python3 -c "import sys,json; print(len(json.load(sys.stdin).get('items',[])))" 2>/dev/null || echo "0")
+    if [ "$fc" -ge 1 ]; then pass "favorites list: $fc items"; else fail "favorites list: $fc"; fi
+
+    r=$(curl -s --max-time 5 -b "$C" -X POST "$FE/api/favorites/$MID" 2>/dev/null || echo "")
+    if echo "$r" | grep -q '"favorited":false'; then pass "remove favorite"; else fail "remove favorite: $r"; fi
+  fi
+
   # ── watch history ──────────────────────────────────────────────────────
   echo ""
   bold "Watch History"
