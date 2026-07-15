@@ -189,6 +189,9 @@ def create_app(funnel_path: str, data_dir: str = "./data") -> FastAPI:
                 request.state.user = None
                 request.state.user_id = 0
                 return await call_next(request)
+            # Allow backend registration/heartbeat even during setup
+            if path in ("/api/backends/register", "/api/backends/heartbeat"):
+                return await call_next(request)
             if path.startswith("/api/"):
                 return JSONResponse({"error": "setup_required"}, status_code=503)
             return RedirectResponse(url="/setup", status_code=302)
