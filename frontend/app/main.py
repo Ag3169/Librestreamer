@@ -168,10 +168,14 @@ def create_app(funnel_path: str, data_dir: str = "./data") -> FastAPI:
     static_dir = os.path.join(here, "static")
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
+    uploads_dir = os.path.join(state.data_dir, "uploads")
+    os.makedirs(uploads_dir, exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+
     @app.middleware("http")
     async def auth_middleware(request: Request, call_next):
         path = request.url.path
-        if path in ("/login", "/logout", "/healthz", "/favicon.ico") or path.startswith("/static/"):
+        if path in ("/login", "/logout", "/healthz", "/favicon.ico") or path.startswith("/static/") or path.startswith("/uploads/"):
             return await call_next(request)
         if path.startswith("/System") or path.startswith("/Users") or path.startswith("/Videos") or path.startswith("/Audio") or path.startswith("/Items") or path.startswith("/Sessions") or path.startswith("/DisplayPreferences") or path.startswith("/Branding") or path.startswith("/web/"):
             request.state.user = None

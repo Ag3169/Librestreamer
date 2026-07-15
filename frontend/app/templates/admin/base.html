@@ -3,21 +3,42 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-  <title>{% block title %}{{ t("admin.title") }}{% endblock %} &middot; LibreStreamer</title>
+  <link rel="icon" type="image/svg+xml" href="{% if branding.logo_url %}/uploads/{{ branding.logo_url }}{% elif branding.favicon_url %}/uploads/{{ branding.favicon_url }}{% else %}/static/favicon.svg{% endif %}">
+  <title>{% block title %}{{ t("admin.title") }}{% endblock %} &middot; {{ branding.site_name }}</title>
   <link rel="stylesheet" href="/static/css/style.css">
   <link rel="stylesheet" href="/static/css/admin.css">
+  <style id="branding-css">
+  :root{
+    --accent:{{ branding.accent_color }};
+    --accent-2:{{ branding.accent_color_2 }};
+    --bg:{{ branding.bg_color }};
+    --bg-2:{{ branding.bg_color_2 }};
+    --card:{{ branding.card_color }};
+    --text:{{ branding.text_color }};
+    --accent-glow:{{ branding.accent_color }}26;
+  }
+  </style>
+  {% if branding.custom_css %}
+  <style id="custom-css">{{ branding.custom_css|safe }}</style>
+  {% endif %}
 </head>
 <body>
   <div class="admin-layout">
     <aside class="admin-sidebar">
-      <a class="admin-brand" href="/">LibreStreamer</a>
+      <a class="admin-brand" href="/">
+        {% if branding.logo_url %}
+        <img src="/uploads/{{ branding.logo_url }}" alt="{{ branding.site_name }}" class="brand-logo">
+        {% else %}
+        {{ branding.site_name }}
+        {% endif %}
+      </a>
       <nav>
         <a href="/admin" class="{% if request.url.path == '/admin' %}active{% endif %}">{{ t("admin.dashboard") }}</a>
         <a href="/admin/servers" class="{% if request.url.path == '/admin/servers' %}active{% endif %}">{{ t("admin.servers") }}</a>
         <a href="/admin/upload" class="{% if request.url.path == '/admin/upload' %}active{% endif %}">{{ t("admin.upload") }}</a>
         <a href="/admin/libraries" class="{% if request.url.path == '/admin/libraries' %}active{% endif %}">{{ t("admin.libraries") }}</a>
         <a href="/admin/users" class="{% if request.url.path == '/admin/users' %}active{% endif %}">{{ t("admin.users") }}</a>
+        <a href="/admin/branding" class="{% if request.url.path == '/admin/branding' %}active{% endif %}">{{ t("admin.branding") }}</a>
         <a href="/admin/logs" class="{% if request.url.path == '/admin/logs' %}active{% endif %}">{{ t("admin.logs") }}</a>
       </nav>
       <div class="admin-sidebar-footer">

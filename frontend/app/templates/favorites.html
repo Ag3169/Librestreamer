@@ -1,28 +1,32 @@
 {% extends "base.html" %}
-{% block title %}LibreStreamer &middot; {{ t("favorites.title") }}{% endblock %}
+{% block title %}{{ t("favorites.title") }} &middot; {{ branding.site_name }}{% endblock %}
 {% block content %}
-<section>
-  <h2>{{ t("favorites.title") }}</h2>
+<div class="page-content">
+  <div class="sectionTitle">{{ t("favorites.title") }}</div>
   {% if items %}
-  <div class="card-row">
+  <div class="itemsContainer">
     {% for it in items %}
-    <div class="card" onclick="location.href='/item/{{ it['id'] }}'">
-      {% if it['has_thumbnail'] %}
-      <div class="thumb" style="background-image:url('/api/thumbnail/{{ it['id'] }}')"></div>
-      {% else %}
-      <div class="thumb empty">&#127916;</div>
-      {% endif %}
-      <div class="info">
-        <div class="name">{{ it['title'] }}</div>
-        {% if it['year'] %}<div class="sub">{{ it['year'] }}</div>{% endif %}
+    <div class="card portraitCard" onclick="location.href='/item/{{ it['id'] }}'">
+      <div class="cardBox">
+        <div class="cardScalable">
+          <div class="cardPadder-portrait"></div>
+          <div class="cardImageContainer" {% if it['has_thumbnail'] %}style="background-image:url('/api/thumbnail/{{ it['id'] }}')"{% endif %}>
+            {% if not it['has_thumbnail'] %}<span class="cardDefaultText">{{ it['title'][:2] }}</span>{% endif %}
+          </div>
+          <div class="cardOverlayContainer"><div class="cardOverlayPlayBtn">&#25B6;</div></div>
+        </div>
+        <div class="cardFooter">
+          <div class="cardText">{{ it['title'] }}</div>
+          {% if it['year'] %}<div class="cardText cardText-secondary">{{ it['year'] }}</div>{% endif %}
+        </div>
       </div>
     </div>
     {% endfor %}
   </div>
   {% else %}
-  <div class="empty-state">
-    <p>{{ t("favorites.empty") }}</p>
+  <div class="centerMessage">
+    <h2>{{ t("favorites.empty") }}</h2>
   </div>
   {% endif %}
-</section>
+</div>
 {% endblock %}

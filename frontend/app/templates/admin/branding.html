@@ -1,0 +1,165 @@
+{% extends "admin/base.html" %}
+{% block title %}{{ t("branding.title") }}{% endblock %}
+{% block content %}
+<h1>{{ t("branding.title") }}</h1>
+
+<div style="margin-bottom:16px">
+  <select class="lang-select" onchange="changeLang(this.value)">
+    {% for code, name in languages %}
+    <option value="{{ code }}" {{ 'selected' if code == lang else '' }}>{{ name }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+<form method="POST" action="/admin/branding/save" enctype="multipart/form-data">
+  <div class="branding-section">
+    <h2>{{ t("branding.identity") }}</h2>
+    <div class="form-row">
+      <label>{{ t("branding.site_name") }}</label>
+      <input type="text" name="site_name" value="{{ branding.site_name }}" placeholder="LibreStreamer">
+    </div>
+    <div class="form-row">
+      <label>{{ t("branding.footer_text") }}</label>
+      <input type="text" name="footer_text" value="{{ branding.footer_text }}" placeholder="{{ t('branding.footer_placeholder') }}">
+    </div>
+    <div class="form-row">
+      <label>
+        <input type="checkbox" name="hide_branding" value="true" {{ 'checked' if branding.hide_branding == 'true' else '' }}>
+        {{ t("branding.hide_branding") }}
+      </label>
+      <p class="muted">{{ t("branding.hide_branding_desc") }}</p>
+    </div>
+  </div>
+
+  <div class="branding-section">
+    <h2>{{ t("branding.logo") }}</h2>
+    <p class="muted">{{ t("branding.logo_desc") }}</p>
+    <div class="form-row">
+      <label>{{ t("branding.upload_logo") }}</label>
+      <input type="file" name="logo_file" accept="image/png,image/jpeg,image/svg+xml,image/webp">
+    </div>
+    {% if branding.logo_url %}
+    <div class="branding-preview">
+      <span class="muted">{{ t("branding.current_logo") }}:</span>
+      <img src="/uploads/{{ branding.logo_url }}" class="branding-logo-preview">
+      <button type="button" class="btn small danger" onclick="removeLogo()">{{ t("branding.remove_logo") }}</button>
+    </div>
+    {% endif %}
+    <div class="form-row">
+      <label>{{ t("branding.favicon") }}</label>
+      <input type="file" name="favicon_file" accept="image/png,image/svg+xml,image/x-icon">
+    </div>
+  </div>
+
+  <div class="branding-section">
+    <h2>{{ t("branding.colors") }}</h2>
+    <div class="color-grid">
+      <div class="color-item">
+        <label>{{ t("branding.accent") }}</label>
+        <div class="color-input-wrap">
+          <input type="color" name="accent_color" value="{{ branding.accent_color }}" class="color-picker">
+          <input type="text" name="accent_color_text" value="{{ branding.accent_color }}" class="color-text" oninput="this.previousElementSibling.value=this.value">
+        </div>
+      </div>
+      <div class="color-item">
+        <label>{{ t("branding.accent_2") }}</label>
+        <div class="color-input-wrap">
+          <input type="color" name="accent_color_2" value="{{ branding.accent_color_2 }}" class="color-picker">
+          <input type="text" name="accent_color_2_text" value="{{ branding.accent_color_2 }}" class="color-text" oninput="this.previousElementSibling.value=this.value">
+        </div>
+      </div>
+      <div class="color-item">
+        <label>{{ t("branding.bg") }}</label>
+        <div class="color-input-wrap">
+          <input type="color" name="bg_color" value="{{ branding.bg_color }}" class="color-picker">
+          <input type="text" name="bg_color_text" value="{{ branding.bg_color }}" class="color-text" oninput="this.previousElementSibling.value=this.value">
+        </div>
+      </div>
+      <div class="color-item">
+        <label>{{ t("branding.bg_2") }}</label>
+        <div class="color-input-wrap">
+          <input type="color" name="bg_color_2" value="{{ branding.bg_color_2 }}" class="color-picker">
+          <input type="text" name="bg_color_2_text" value="{{ branding.bg_color_2 }}" class="color-text" oninput="this.previousElementSibling.value=this.value">
+        </div>
+      </div>
+      <div class="color-item">
+        <label>{{ t("branding.card") }}</label>
+        <div class="color-input-wrap">
+          <input type="color" name="card_color" value="{{ branding.card_color }}" class="color-picker">
+          <input type="text" name="card_color_text" value="{{ branding.card_color }}" class="color-text" oninput="this.previousElementSibling.value=this.value">
+        </div>
+      </div>
+      <div class="color-item">
+        <label>{{ t("branding.text") }}</label>
+        <div class="color-input-wrap">
+          <input type="color" name="text_color" value="{{ branding.text_color }}" class="color-picker">
+          <input type="text" name="text_color_text" value="{{ branding.text_color }}" class="color-text" oninput="this.previousElementSibling.value=this.value">
+        </div>
+      </div>
+    </div>
+    <button type="button" class="btn small" onclick="resetColors()">{{ t("branding.reset_colors") }}</button>
+  </div>
+
+  <div class="branding-section">
+    <h2>{{ t("branding.custom_css") }}</h2>
+    <p class="muted">{{ t("branding.custom_css_desc") }}</p>
+    <div class="form-row">
+      <textarea name="custom_css" class="css-editor" placeholder="/* Your custom CSS here */" spellcheck="false">{{ branding.custom_css }}</textarea>
+    </div>
+  </div>
+
+  <div class="branding-section">
+    <h2>{{ t("branding.preview") }}</h2>
+    <div class="branding-preview-box" id="preview-box">
+      <span class="branding-preview-title">{{ branding.site_name }}</span>
+      <button class="btn btn-primary">{{ t("item.play") }}</button>
+      <div class="card" style="max-width:170px">
+        <div class="thumb empty">&#127916;</div>
+        <div class="info"><div class="name">{{ t("branding.sample_item") }}</div><div class="sub">2024</div></div>
+      </div>
+    </div>
+  </div>
+
+  <button type="submit" class="btn btn-primary">{{ t("branding.save") }}</button>
+  <a href="/admin/branding" class="btn">{{ t("branding.reset") }}</a>
+</form>
+
+{% if msg %}
+<div class="toast ok" style="position:static">{{ msg }}</div>
+{% endif %}
+
+<script>
+function removeLogo() {
+  fetch('/api/admin/branding/remove-logo', {method:'POST'}).then(()=>location.reload());
+}
+function resetColors() {
+  const defaults = {accent_color:'#00a4dc',accent_color_2:'#0084b8',bg_color:'#0a0a0a',bg_color_2:'#141414',card_color:'#1a1a1a',text_color:'#f2f2f2'};
+  for (const [k,v] of Object.entries(defaults)) {
+    const picker = document.querySelector('input[name="'+k+'"]');
+    const text = document.querySelector('input[name="'+k+'_text"]');
+    if (picker) picker.value = v;
+    if (text) text.value = v;
+  }
+  updatePreview();
+}
+function updatePreview() {
+  const root = document.getElementById('preview-box');
+  if (!root) return;
+  const accent = document.querySelector('input[name="accent_color"]')?.value || '#00a4dc';
+  const bg = document.querySelector('input[name="bg_color"]')?.value || '#0a0a0a';
+  const card = document.querySelector('input[name="card_color"]')?.value || '#1a1a1a';
+  const text = document.querySelector('input[name="text_color"]')?.value || '#f2f2f2';
+  root.style.setProperty('--accent', accent);
+  root.style.setProperty('--bg', bg);
+  root.style.setProperty('--card', card);
+  root.style.setProperty('--text', text);
+  root.style.background = bg;
+  root.style.color = text;
+  root.querySelector('.btn-primary').style.background = accent;
+  root.querySelector('.branding-preview-title').style.color = accent;
+  root.querySelector('.card').style.background = card;
+}
+document.querySelectorAll('.color-picker').forEach(p => p.addEventListener('input', updatePreview));
+document.addEventListener('DOMContentLoaded', updatePreview);
+</script>
+{% endblock %}

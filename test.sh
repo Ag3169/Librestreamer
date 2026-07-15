@@ -322,10 +322,37 @@ run_tests(){
   echo ""
   bold "Admin Panel"
 
-  for path in "/admin" "/admin/servers" "/admin/upload" "/admin/libraries" "/admin/users" "/admin/logs"; do
+  for path in "/admin" "/admin/servers" "/admin/upload" "/admin/libraries" "/admin/users" "/admin/branding" "/admin/logs"; do
     r=$(curl -s --max-time 5 -b "$C" -o /dev/null -w "%{http_code}" "$FE$path")
     if [ "$r" = "200" ]; then pass "GET $path"; else fail "GET $path: $r"; fi
   done
+
+  # ── branding ───────────────────────────────────────────────────────────
+  echo ""
+  bold "Branding & Customization"
+
+  r=$(curl -s --max-time 5 -b "$C" -X POST -H "Content-Type: application/json" \
+    -d '{"site_name":"TestMedia","accent_color":"#ff0066"}' \
+    "$FE/api/admin/branding" 2>/dev/null || echo "")
+  if echo "$r" | grep -q '"ok"'; then pass "set branding via API"; else fail "set branding: $r"; fi
+
+  r=$(curl -s --max-time 5 -b "$C" "$FE/" 2>/dev/null || echo "")
+  if echo "$r" | grep -q 'TestMedia'; then pass "site name injected into page"; else fail "site name injection"; fi
+
+  r=$(curl -s --max-time 5 -b "$C" "$FE/" 2>/dev/null || echo "")
+  if echo "$r" | grep -q '#ff0066'; then pass "custom color injected into CSS"; else fail "color injection"; fi
+
+  r=$(curl -s --max-time 5 -b "$C" -X POST -H "Content-Type: application/json" \
+    -d '{"custom_css":".test-mark{color:red}"}' \
+    "$FE/api/admin/branding" 2>/dev/null || echo "")
+  r=$(curl -s --max-time 5 -b "$C" "$FE/" 2>/dev/null || echo "")
+  if echo "$r" | grep -q 'test-mark'; then pass "custom CSS injected"; else fail "custom CSS injection"; fi
+
+  r=$(curl -s --max-time 5 -b "$C" -X POST "$FE/api/admin/branding/reset" 2>/dev/null || echo "")
+  if echo "$r" | grep -q '"ok"'; then pass "reset branding to defaults"; else fail "reset branding: $r"; fi
+
+  r=$(curl -s --max-time 5 -b "$C" "$FE/" 2>/dev/null || echo "")
+  if echo "$r" | grep -q 'LibreStreamer'; then pass "default name restored"; else fail "default name restore"; fi
 
   # ── admin stats ────────────────────────────────────────────────────────
   echo ""

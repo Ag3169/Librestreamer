@@ -3,60 +3,107 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-  <title>{% block title %}LibreStreamer{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{% if branding.favicon_url %}/uploads/{{ branding.favicon_url }}{% elif branding.logo_url %}/uploads/{{ branding.logo_url }}{% else %}/static/favicon.svg{% endif %}">
+  <title>{% block title %}{{ branding.site_name }}{% endblock %}</title>
   <link rel="stylesheet" href="/static/css/style.css">
   <link rel="stylesheet" href="/static/css/admin.css">
+  <style id="branding-css">
+  :root{
+    --accent:{{ branding.accent_color }};
+    --accent-2:{{ branding.accent_color_2 }};
+    --bg:{{ branding.bg_color }};
+    --paper:{{ branding.card_color }};
+    --text:{{ branding.text_color }};
+  }
+  </style>
+  {% if branding.custom_css %}
+  <style id="custom-css">{{ branding.custom_css|safe }}</style>
+  {% endif %}
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="/">LibreStreamer</a>
-    <nav>
-      <a href="/">{{ t("nav.home") }}</a>
-      <a href="/library">{{ t("nav.all") }}</a>
-      <a href="/library?type=movie">{{ t("nav.movies") }}</a>
-      <a href="/library?type=show">{{ t("nav.shows") }}</a>
-      <a href="/library?type=episode">{{ t("nav.episodes") }}</a>
-      <a href="/library?type=music">{{ t("nav.music") }}</a>
-      <a href="/favorites">&#9734;</a>
-    </nav>
-    <div class="spacer"></div>
-    <form action="/search" method="GET" class="search-box">
-      <input type="text" name="q" placeholder="{{ t('nav.search') }}" value="{{ request.query_params.get('q', '') }}">
-    </form>
-    <select id="lang-select" class="lang-select" onchange="changeLang(this.value)">
-      {% for code, name in languages %}
-      <option value="{{ code }}" {{ 'selected' if code == lang else '' }}>{{ name }}</option>
-      {% endfor %}
-    </select>
+  <div class="mainDrawer-overlay" id="drawer-overlay" onclick="toggleDrawer()"></div>
+  <aside class="mainDrawer" id="main-drawer">
+    <a class="navMenuOption {% if request.url.path == '/' %}active{% endif %}" href="/">
+      <span class="navMenuOptionIcon">&#127968;</span><span class="navMenuOptionText">{{ t("nav.home") }}</span>
+    </a>
+    <div class="sidebarHeader">{{ t("nav.header_media") }}</div>
+    <a class="navMenuOption {% if request.url.path == '/library' and not request.query_params.get('type') %}active{% endif %}" href="/library">
+      <span class="navMenuOptionIcon">&#128193;</span><span class="navMenuOptionText">{{ t("nav.all") }}</span>
+    </a>
+    <a class="navMenuOption {% if request.query_params.get('type') == 'movie' %}active{% endif %}" href="/library?type=movie">
+      <span class="navMenuOptionIcon">&#127909;</span><span class="navMenuOptionText">{{ t("nav.movies") }}</span>
+    </a>
+    <a class="navMenuOption {% if request.query_params.get('type') == 'show' %}active{% endif %}" href="/library?type=show">
+      <span class="navMenuOptionIcon">&#128250;</span><span class="navMenuOptionText">{{ t("nav.shows") }}</span>
+    </a>
+    <a class="navMenuOption {% if request.query_params.get('type') == 'music' %}active{% endif %}" href="/library?type=music">
+      <span class="navMenuOptionIcon">&#127925;</span><span class="navMenuOptionText">{{ t("nav.music") }}</span>
+    </a>
+    <a class="navMenuOption {% if request.url.path == '/favorites' %}active{% endif %}" href="/favorites">
+      <span class="navMenuOptionIcon">&#9734;</span><span class="navMenuOptionText">{{ t("favorites.title") }}</span>
+    </a>
     {% if user %}
+    <div class="sidebarHeader">{{ t("nav.header_user") }}</div>
+    <a class="navMenuOption" href="/preferences">
+      <span class="navMenuOptionIcon">&#9881;</span><span class="navMenuOptionText">{{ t("nav.preferences") }}</span>
+    </a>
     {% if user['is_admin'] %}
-    <a href="/admin" class="topbar-admin">{{ t("nav.admin") }}</a>
+    <a class="navMenuOption {% if request.url.path.startswith('/admin') and not request.url.path.startswith('/admin/branding') %}active{% endif %}" href="/admin">
+      <span class="navMenuOptionIcon">&#128208;</span><span class="navMenuOptionText">{{ t("nav.admin") }}</span>
+    </a>
+    <a class="navMenuOption {% if request.url.path == '/admin/branding' %}active{% endif %}" href="/admin/branding">
+      <span class="navMenuOptionIcon">&#127912;</span><span class="navMenuOptionText">{{ t("admin.branding") }}</span>
+    </a>
     {% endif %}
-    <span class="topbar-user">{{ user['username'] }}</span>
-    <a href="/preferences" class="topbar-prefs">{{ t("nav.preferences") }}</a>
-    <a href="/logout" class="topbar-logout">{{ t("nav.logout") }}</a>
+    <a class="navMenuOption" href="/logout">
+      <span class="navMenuOptionIcon">&#10162;</span><span class="navMenuOptionText">{{ t("nav.logout") }}</span>
+    </a>
     {% endif %}
+    <div class="mainDrawer-footer">
+      <select class="lang-select" onchange="changeLang(this.value)">
+        {% for code, name in languages %}
+        <option value="{{ code }}" {{ 'selected' if code == lang else '' }}>{{ name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </aside>
+
+  <header class="skinHeader">
+    <div class="headerLeft">
+      <button class="headerButton" onclick="toggleDrawer()" aria-label="Menu">&#9776;</button>
+      <span class="pageTitle">
+        {% if branding.logo_url %}
+        <img src="/uploads/{{ branding.logo_url }}" class="brand-logo" alt="{{ branding.site_name }}">
+        {% else %}
+        {{ branding.site_name }}
+        {% endif %}
+      </span>
+    </div>
+    <div class="spacer"></div>
+    <div class="headerRight">
+      <form action="/search" method="GET" style="display:inline-flex;align-items:center">
+        <input type="text" name="q" class="search-input" placeholder="{{ t('nav.search') }}" value="{{ request.query_params.get('q', '') }}">
+      </form>
+    </div>
   </header>
+
   <main>
     {% block content %}{% endblock %}
   </main>
-  <script src="/static/js/app.js"></script>
+  {% if branding.footer_text %}
+  <footer style="text-align:center;padding:2em;color:var(--muted);font-size:.85em;border-top:1px solid #333;margin-top:2em">{{ branding.footer_text|safe }}</footer>
+  {% endif %}
+
   <script>
-  window.i18n = {
-    nothing_here: {{ t("common.nothing_here")|tojson }},
-    stream_error: {{ t("player.stream_error")|tojson }},
-    playing: {{ t("player.playing")|tojson }},
-    buffering: {{ t("player.buffering")|tojson }},
-    cpu: {{ t("dash.cpu")|tojson }},
-    ram: {{ t("dash.ram")|tojson }},
-    gpu: {{ t("dash.gpu")|tojson }}
-  };
-  function changeLang(lang) {
-    fetch('/api/language', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({lang:lang})})
-    .then(() => location.reload());
+  function toggleDrawer() {
+    document.getElementById('main-drawer').classList.toggle('open');
+    document.getElementById('drawer-overlay').classList.toggle('open');
   }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { document.getElementById('main-drawer').classList.remove('open'); document.getElementById('drawer-overlay').classList.remove('open'); }
+  });
   </script>
+  <script src="/static/js/app.js"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

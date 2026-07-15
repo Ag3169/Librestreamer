@@ -1,9 +1,9 @@
 {% extends "base.html" %}
-{% block title %}LibreStreamer &middot; {{ code }}{% endblock %}
+{% block title %}{{ code }} &middot; {{ branding.site_name }}{% endblock %}
 {% block content %}
-<section class="error">
+<div class="error">
   <h1>{{ code }}</h1>
   <p>{{ message }}</p>
-  <a href="/">{{ t("error.go_home") }}</a>
-</section>
+  <a href="/" style="color:var(--accent)">{{ t("error.go_home") }}</a>
+</div>
 {% endblock %}

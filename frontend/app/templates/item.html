@@ -1,75 +1,67 @@
 {% extends "base.html" %}
-{% block title %}LibreStreamer &middot; {{ item['title'] }}{% endblock %}
+{% block title %}{{ item['title'] }} &middot; {{ branding.site_name }}{% endblock %}
 {% block content %}
-<div class="detail-hero">
-  {% if item['has_thumbnail'] %}
-  <div class="detail-hero-bg" style="background-image:url('/api/thumbnail/{{ item['id'] }}')"></div>
-  {% endif %}
-  <div class="detail">
-    <div class="poster">
-      {% if item['has_thumbnail'] %}
-      <img src="/api/thumbnail/{{ item['id'] }}" alt="{{ item['title'] }}">
-      {% else %}
-      <img src="/static/favicon.svg" alt="{{ item['title'] }}" style="object-fit:contain;padding:40px">
-      {% endif %}
-    </div>
-    <div class="meta">
-      <h1>{{ item['title'] }}</h1>
-      <div class="sub">
-        {% if item['type'] %}<span class="tag">{{ item['type']|capitalize }}</span>{% endif %}
-        {% if item['year'] %}<span class="tag">{{ item['year'] }}</span>{% endif %}
-        {% if item['duration'] %}<span class="tag">{{ (item['duration'] / 60)|round(0) }} min</span>{% endif %}
-        {% if item['resolution'] %}<span class="tag">{{ item['resolution'] }}</span>{% endif %}
-        {% if item['codec'] %}<span class="tag">{{ item['codec'] }}</span>{% endif %}
-        {% if item['size'] %}<span class="tag">{{ '%.1f'|format(item['size'] / 1073741824) }} GB</span>{% endif %}
-      </div>
-      {% if item['type'] in ('movie', 'episode', 'music') %}
-      <div class="actions">
-        <a class="play" href="/watch/{{ item['id'] }}">{{ t("item.play") }}</a>
-        {% if item['type'] == 'movie' or item['type'] == 'episode' %}
-        <button class="btn-icon" onclick="toggleFav('{{ item['id'] }}')" id="fav-btn">&#9734;</button>
-        {% endif %}
-      </div>
-      {% endif %}
-      {% if item['sources'] %}
-      <div class="sources">
-        {% for name in item['sources'].keys() if item['sources'] is mapping %}
-        <span class="chip">{{ name }}</span>
-        {% endfor %}
-      </div>
-      {% endif %}
-      <div class="info-grid">
-        {% if item['show_name'] %}<div class="info-item"><div class="label">{{ t("item.show") }}</div><div class="value">{{ item['show_name'] }}</div></div>{% endif %}
-        {% if item['season'] %}<div class="info-item"><div class="label">{{ t("item.season") }}</div><div class="value">{{ item['season'] }}</div></div>{% endif %}
-        {% if item['episode'] %}<div class="info-item"><div class="label">{{ t("item.episode_num") }}</div><div class="value">{{ item['episode'] }}</div></div>{% endif %}
-        {% if item['mime_type'] %}<div class="info-item"><div class="label">{{ t("item.format") }}</div><div class="value">{{ item['mime_type'] }}</div></div>{% endif %}
-        <div class="info-item"><div class="label">{{ t("item.backend") }}</div><div class="value">{{ item['backend'] }}</div></div>
+<div class="itemBackdrop" {% if item['has_thumbnail'] %}style="background-image:url('/api/thumbnail/{{ item['id'] }}')"{% endif %}></div>
+
+<div class="detailRibbon">
+  <div class="detailImage">
+    <div class="cardScalable">
+      <div class="cardPadder-portrait"></div>
+      <div class="cardImageContainer" {% if item['has_thumbnail'] %}style="background-image:url('/api/thumbnail/{{ item['id'] }}')"{% endif %}>
+        {% if not item['has_thumbnail'] %}<span class="cardDefaultText">&#127916;</span>{% endif %}
       </div>
     </div>
   </div>
 </div>
 
+<div class="detailPagePrimaryContent" dir="{{ 'rtl' if lang in ('ar','he') else 'ltr' }}">
+  <h1 class="itemName">{{ item['title'] }}</h1>
+  <div class="itemMiscInfo">
+    {% if item['year'] %}<span class="mediaInfoItem">{{ item['year'] }}</span><span class="bulletSeparator">&bull;</span>{% endif %}
+    {% if item['duration'] %}<span class="mediaInfoItem">{{ (item['duration'] / 60)|round(0) }} min</span><span class="bulletSeparator">&bull;</span>{% endif %}
+    {% if item['resolution'] %}<span class="mediaInfoItem">{{ item['resolution'] }}</span><span class="bulletSeparator">&bull;</span>{% endif %}
+    {% if item['type'] %}<span class="mediaInfoItem">{{ item['type']|capitalize }}</span>{% endif %}
+  </div>
+  <div class="mainDetailButtons">
+    {% if item['type'] in ('movie', 'episode', 'music') %}
+    <a href="/watch/{{ item['id'] }}" class="btnPlay">&#25B6; {{ t("item.play") }}</a>
+    {% endif %}
+    {% if item['type'] == 'movie' or item['type'] == 'episode' %}
+    <button class="detailButton" onclick="toggleFav('{{ item['id'] }}')" id="fav-btn">
+      <span class="detailButton-icon">&#9734;</span>
+      <span class="detailButton-text">{{ t("item.favorite") }}</span>
+    </button>
+    {% endif %}
+  </div>
+  {% if item['show_name'] %}
+  <div class="itemOverview" style="font-size:1.1em;color:var(--text);margin:.5em 0">{{ item['show_name'] }}{% if item['season'] %} &middot; {{ t("item.season") }} {{ item['season'] }}{% endif %}{% if item['episode'] %} &middot; {{ t("item.episode_num") }} {{ item['episode'] }}{% endif %}</div>
+  {% endif %}
+  <div class="itemDetailsGroup">
+    {% if item['codec'] %}<div class="detailsGroupItem"><span class="label" style="color:var(--muted)">{{ t("item.format") }}</span> {{ item['mime_type'] }} / {{ item['codec'] }}</div>{% endif %}
+    {% if item['size'] %}<div class="detailsGroupItem"><span class="label" style="color:var(--muted)">{{ t("item.size") }}</span> {{ '%.1f'|format(item['size'] / 1073741824) }} GB</div>{% endif %}
+    <div class="detailsGroupItem"><span class="label" style="color:var(--muted)">{{ t("item.backend") }}</span> {{ item['backend'] }}</div>
+  </div>
+</div>
+
 {% if children %}
-<section class="row">
-  <h2>{{ t("item.episodes") }}</h2>
+<div class="page-content" style="padding-top:1.5em">
+  <div class="sectionTitle">{{ t("item.episodes") }}</div>
   <div class="season-selector" id="season-selector"></div>
   <div class="episode-list" id="episode-list">
     {% for c in children %}
     <div class="episode-item" data-season="{{ c['season'] }}" onclick="location.href='/watch/{{ c['id'] }}'">
-      {% if c['has_thumbnail'] %}
-      <div class="ep-thumb" style="background-image:url('/api/thumbnail/{{ c['id'] }}')"></div>
-      {% else %}
-      <div class="ep-thumb empty">&#127916;</div>
-      {% endif %}
+      <div class="ep-thumb" {% if c['has_thumbnail'] %}style="background-image:url('/api/thumbnail/{{ c['id'] }}')"{% else %}style="display:flex;align-items:center;justify-content:center"{% endif %}>
+        {% if not c['has_thumbnail'] %}&#127916;{% endif %}
+      </div>
       <div class="ep-info">
         <div class="ep-num">S{{ '%02d'|format(c['season']) }}E{{ '%02d'|format(c['episode']) }}</div>
         <div class="ep-title">{{ c['title'] }}</div>
-        {% if c['duration'] %}<div class="ep-desc">{{ (c['duration'] / 60)|round(0) }} min{% if c['year'] %} &middot; {{ c['year'] }}{% endif %}</div>{% endif %}
+        {% if c['duration'] %}<div class="ep-desc">{{ (c['duration'] / 60)|round(0) }} min</div>{% endif %}
       </div>
     </div>
     {% endfor %}
   </div>
-</section>
+</div>
 <script>
 (function(){
   const eps = document.querySelectorAll('.episode-item');
@@ -92,40 +84,39 @@
 {% endif %}
 
 {% if similar %}
-<section class="row">
-  <h2>{{ t("item.similar") }}</h2>
-  <div class="card-row">
+<div class="page-content" style="padding-top:1.5em">
+  <div class="sectionTitle">{{ t("item.similar") }}</div>
+  <div class="itemsContainer">
     {% for s in similar %}
-    <div class="card" onclick="location.href='/item/{{ s['id'] }}'">
-      {% if s['has_thumbnail'] %}
-      <div class="thumb" style="background-image:url('/api/thumbnail/{{ s['id'] }}')"></div>
-      {% else %}
-      <div class="thumb empty">&#127916;</div>
-      {% endif %}
-      <div class="info">
-        <div class="name">{{ s['title'] }}</div>
-        {% if s['year'] %}<div class="sub">{{ s['year'] }}</div>{% endif %}
+    <div class="card portraitCard" onclick="location.href='/item/{{ s['id'] }}'">
+      <div class="cardBox">
+        <div class="cardScalable">
+          <div class="cardPadder-portrait"></div>
+          <div class="cardImageContainer" {% if s['has_thumbnail'] %}style="background-image:url('/api/thumbnail/{{ s['id'] }}')"{% endif %}>
+            {% if not s['has_thumbnail'] %}<span class="cardDefaultText">&#127916;</span>{% endif %}
+          </div>
+          <div class="cardOverlayContainer"><div class="cardOverlayPlayBtn">&#25B6;</div></div>
+        </div>
+        <div class="cardFooter">
+          <div class="cardText">{{ s['title'] }}</div>
+          {% if s['year'] %}<div class="cardText cardText-secondary">{{ s['year'] }}</div>{% endif %}
+        </div>
       </div>
     </div>
     {% endfor %}
   </div>
-</section>
+</div>
 {% endif %}
 {% endblock %}
 {% block scripts %}
 <script>
-window.ITEM_ID = {{ item['id']|tojson }};
-window.ITEM_TYPE = {{ item['type']|tojson }};
-window.ITEM_THUMB = {{ item['has_thumbnail']|tojson }};
-window.CHILDREN = {{ children_json|tojson }};
-
 function toggleFav(id) {
   fetch('/api/favorites/' + id, {method:'POST'}).then(r => r.json()).then(d => {
     const btn = document.getElementById('fav-btn');
-    btn.innerHTML = d.favorited ? '\u2605' : '\u2634';
+    btn.querySelector('.detailButton-icon').innerHTML = d.favorited ? '\u2605' : '\u2634';
     btn.style.color = d.favorited ? 'var(--accent)' : '';
   });
 }
-(function(){ if(window.ITEM_ID) fetch('/api/favorites/' + window.ITEM_ID).then(r=>r.json()).then(d=>{if(d.favorited){const b=document.getElementById('fav-btn');if(b){b.innerHTML='\u2605';b.style.color='var(--accent)'}}}).catch(()=>{}); })();
+(function(){ if(window.ITEM_ID) fetch('/api/favorites/' + window.ITEM_ID).then(r=>r.json()).then(d=>{if(d.favorited){const b=document.getElementById('fav-btn');if(b){b.querySelector('.detailButton-icon').innerHTML='\u2605';b.style.color='var(--accent)'}}}).catch(()=>{}); })();
 </script>
 {% endblock %}

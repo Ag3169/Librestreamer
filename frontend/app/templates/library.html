@@ -1,60 +1,59 @@
 {% extends "base.html" %}
-{% block title %}LibreStreamer &middot; {{ item_type|capitalize if item_type else t("library.title") }}{% endblock %}
+{% block title %}{{ item_type|capitalize if item_type else t("library.title") }} &middot; {{ branding.site_name }}{% endblock %}
 {% block content %}
-<div class="lib-header">
-  <h2>{{ item_type|capitalize if item_type else t("library.all") }}</h2>
-  <span class="muted">{{ total }} {{ t("library.items") }}</span>
-</div>
-
-<div class="lib-filters">
-  <select onchange="updateParam('type', this.value)">
-    <option value="" {{ 'selected' if not item_type else '' }}>{{ t("library.all") }}</option>
-    <option value="movie" {{ 'selected' if item_type == 'movie' else '' }}>{{ t("nav.movies") }}</option>
-    <option value="show" {{ 'selected' if item_type == 'show' else '' }}>{{ t("nav.shows") }}</option>
-    <option value="episode" {{ 'selected' if item_type == 'episode' else '' }}>{{ t("nav.episodes") }}</option>
-    <option value="music" {{ 'selected' if item_type == 'music' else '' }}>{{ t("nav.music") }}</option>
-  </select>
-  <select onchange="updateParam('sort', this.value)">
-    <option value="title" {{ 'selected' if sort == 'title' else '' }}>{{ t("library.sort_title") }}</option>
-    <option value="year" {{ 'selected' if sort == 'year' else '' }}>{{ t("library.sort_year") }}</option>
-    <option value="recent" {{ 'selected' if sort == 'recent' else '' }}>{{ t("library.sort_recent") }}</option>
-    <option value="duration" {{ 'selected' if sort == 'duration' else '' }}>{{ t("library.sort_duration") }}</option>
-  </select>
-</div>
-
-{% if items %}
-<div class="lib-grid">
-  {% for it in items %}
-  <div class="card" onclick="location.href='/item/{{ it['id'] }}'">
-    {% if it['has_thumbnail'] %}
-    <div class="thumb" style="background-image:url('/api/thumbnail/{{ it['id'] }}')"></div>
-    {% else %}
-    <div class="thumb empty">&#127916;</div>
-    {% endif %}
-    {% if it['type'] %}<div class="card-badge {{ it['type'] }}">{{ it['type'] }}</div>{% endif %}
-    <div class="info">
-      <div class="name">{{ it['title'] }}</div>
-      {% if it['year'] %}<div class="sub">{{ it['year'] }}</div>{% elif it['show_name'] %}<div class="sub">{{ it['show_name'] }}</div>{% endif %}
-    </div>
+<div class="page-content">
+  <div class="lib-header">
+    <h2>{{ item_type|capitalize if item_type else t("library.all") }}</h2>
+    <span class="muted">{{ total }} {{ t("library.items") }}</span>
   </div>
-  {% endfor %}
+  <div class="lib-filters">
+    <select onchange="updateParam('type', this.value)">
+      <option value="" {{ 'selected' if not item_type else '' }}>{{ t("library.all") }}</option>
+      <option value="movie" {{ 'selected' if item_type == 'movie' else '' }}>{{ t("nav.movies") }}</option>
+      <option value="show" {{ 'selected' if item_type == 'show' else '' }}>{{ t("nav.shows") }}</option>
+      <option value="episode" {{ 'selected' if item_type == 'episode' else '' }}>{{ t("nav.episodes") }}</option>
+      <option value="music" {{ 'selected' if item_type == 'music' else '' }}>{{ t("nav.music") }}</option>
+    </select>
+    <select onchange="updateParam('sort', this.value)">
+      <option value="title" {{ 'selected' if sort == 'title' else '' }}>{{ t("library.sort_title") }}</option>
+      <option value="year" {{ 'selected' if sort == 'year' else '' }}>{{ t("library.sort_year") }}</option>
+      <option value="recent" {{ 'selected' if sort == 'recent' else '' }}>{{ t("library.sort_recent") }}</option>
+    </select>
+  </div>
+  {% if items %}
+  <div class="itemsContainer">
+    {% for it in items %}
+    <div class="card portraitCard" onclick="location.href='/item/{{ it['id'] }}'">
+      <div class="cardBox">
+        <div class="cardScalable">
+          <div class="cardPadder-portrait"></div>
+          <div class="cardImageContainer" {% if it['has_thumbnail'] %}style="background-image:url('/api/thumbnail/{{ it['id'] }}')"{% endif %}>
+            {% if not it['has_thumbnail'] %}<span class="cardDefaultText">{{ it['title'][:2] }}</span>{% endif %}
+          </div>
+          <div class="cardOverlayContainer"><div class="cardOverlayPlayBtn">&#25B6;</div></div>
+        </div>
+        <div class="cardFooter">
+          <div class="cardText">{{ it['title'] }}</div>
+          {% if it['year'] %}<div class="cardText cardText-secondary">{{ it['year'] }}</div>{% elif it['show_name'] %}<div class="cardText cardText-secondary">{{ it['show_name'] }}</div>{% endif %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% if total_pages > 1 %}
+  <div class="lib-pagination">
+    <button onclick="updateParam('page', {{ page - 1 }})" {{ 'disabled' if page <= 1 else '' }}>{{ t("library.prev") }}</button>
+    <span class="muted">{{ page }} / {{ total_pages }}</span>
+    <button onclick="updateParam('page', {{ page + 1 }})" {{ 'disabled' if page >= total_pages else '' }}>{{ t("library.next") }}</button>
+  </div>
+  {% endif %}
+  {% else %}
+  <div class="centerMessage">
+    <h2>{{ t("library.empty") }}</h2>
+    {% if is_admin %}<p><a href="/admin/libraries" style="color:var(--accent)">{{ t("library.admin_rescan") }}</a></p>{% endif %}
+  </div>
+  {% endif %}
 </div>
-
-{% if total_pages > 1 %}
-<div class="lib-pagination">
-  <button onclick="updateParam('page', {{ page - 1 }})" {{ 'disabled' if page <= 1 else '' }}>&larr; {{ t("library.prev") }}</button>
-  <span style="padding:8px 16px;color:var(--muted)">{{ page }} / {{ total_pages }}</span>
-  <button onclick="updateParam('page', {{ page + 1 }})" {{ 'disabled' if page >= total_pages else '' }}>{{ t("library.next") }} &rarr;</button>
-</div>
-{% endif %}
-{% else %}
-<div class="empty-state">
-  <p>{{ t("library.empty") }}</p>
-  {% if is_admin %}<p><a href="/admin/libraries">{{ t("library.admin_rescan") }}</a></p>{% endif %}
-</div>
-{% endif %}
-{% endblock %}
-{% block scripts %}
 <script>
 function updateParam(key, val) {
   const u = new URL(location.href);

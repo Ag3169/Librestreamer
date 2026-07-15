@@ -142,6 +142,24 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .setup-done-icon{font-size:60px;color:#4ad399;text-align:center;margin:24px 0}
 .spinner{width:32px;height:32px;border:3px solid #333;border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;margin:20px auto}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+.brand-logo{height:28px;width:auto;vertical-align:middle}
+.login-logo{max-width:200px;max-height:60px;margin:0 auto 16px;display:block}
+.site-footer{text-align:center;padding:20px;color:var(--muted);font-size:13px;border-top:1px solid #333;margin-top:40px}
+.branding-section{background:var(--card);border-radius:var(--radius);padding:24px;margin-bottom:20px}
+.branding-section h2{margin:0 0 18px;font-size:18px}
+.color-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:16px}
+.color-item label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+.color-input-wrap{display:flex;gap:8px;align-items:center}
+.color-picker{width:40px;height:36px;border:1px solid #444;border-radius:6px;cursor:pointer;background:none;padding:2px}
+.color-text{flex:1;padding:6px 10px;background:var(--bg);border:1px solid #444;border-radius:6px;color:var(--text);font-size:13px;font-family:monospace}
+.css-editor{width:100%;min-height:200px;padding:14px;background:var(--bg);border:1px solid #444;border-radius:var(--radius-sm);color:var(--text);font-family:"Fira Code",monospace,monospace;font-size:13px;line-height:1.6;resize:vertical;tab-size:2}
+.css-editor:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-glow)}
+.branding-preview{display:flex;align-items:center;gap:12px;margin-top:12px}
+.branding-logo-preview{max-height:40px;max-width:160px;border-radius:4px}
+.branding-preview-box{padding:24px;background:var(--bg);border:1px solid #333;border-radius:var(--radius);margin-top:8px;display:flex;flex-direction:column;gap:16px;align-items:flex-start}
+.branding-preview-title{font-size:22px;font-weight:800}
+.branding-preview-box .card{max-width:170px}
 [dir=rtl] .admin-layout{direction:rtl}
 [dir=rtl] .admin-sidebar{border-right:none;border-left:1px solid #333}
 [dir=rtl] .admin-sidebar nav a{border-left:none;border-right:3px solid transparent}

@@ -461,4 +461,32 @@ def get_router(state) -> APIRouter:
             "auto_load_balance": state.balancer.auto_load_balance,
         }
 
+    # ---- branding ----
+
+    @router.get("/api/admin/branding")
+    async def api_get_branding():
+        return db.get_all_settings(state.conn)
+
+    @router.post("/api/admin/branding")
+    async def api_set_branding(payload: dict = None):
+        payload = payload or {}
+        for k in ("site_name","hide_branding","accent_color","accent_color_2",
+                   "bg_color","bg_color_2","card_color","text_color","custom_css",
+                   "footer_text","logo_url","favicon_url"):
+            if k in payload:
+                db.set_setting(state.conn, k, str(payload[k]))
+        return {"status": "ok"}
+
+    @router.post("/api/admin/branding/remove-logo")
+    async def api_remove_logo():
+        db.set_setting(state.conn, "logo_url", "")
+        db.set_setting(state.conn, "favicon_url", "")
+        return {"status": "ok"}
+
+    @router.post("/api/admin/branding/reset")
+    async def api_reset_branding():
+        for k, v in db.BRANDING_DEFAULTS.items():
+            db.set_setting(state.conn, k, v)
+        return {"status": "ok"}
+
     return router

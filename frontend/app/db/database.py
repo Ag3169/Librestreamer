@@ -122,6 +122,11 @@ CREATE TABLE IF NOT EXISTS favorites (
     added_at REAL DEFAULT 0,
     PRIMARY KEY (user_id, item_id)
 );
+
+CREATE TABLE IF NOT EXISTS settings (
+    key TEXT PRIMARY KEY,
+    value TEXT DEFAULT ''
+);
 """)
     conn.commit()
 
@@ -394,3 +399,38 @@ def get_favorites(conn: sqlite3.Connection, user_id: int) -> list[sqlite3.Row]:
         if item:
             items.append(item)
     return items
+
+
+# ---- settings / branding ----
+
+BRANDING_DEFAULTS = {
+    "site_name": "LibreStreamer",
+    "hide_branding": "false",
+    "accent_color": "#00a4dc",
+    "accent_color_2": "#0084b8",
+    "bg_color": "#0a0a0a",
+    "bg_color_2": "#141414",
+    "card_color": "#1a1a1a",
+    "text_color": "#f2f2f2",
+    "custom_css": "",
+    "logo_url": "",
+    "favicon_url": "",
+    "footer_text": "",
+}
+
+def get_setting(conn: sqlite3.Connection, key: str) -> str:
+    row = conn.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+    if row:
+        return row["value"]
+    return BRANDING_DEFAULTS.get(key, "")
+
+def get_all_settings(conn: sqlite3.Connection) -> dict:
+    rows = conn.execute("SELECT key, value FROM settings").fetchall()
+    d = dict(BRANDING_DEFAULTS)
+    for r in rows:
+        d[r["key"]] = r["value"]
+    return d
+
+def set_setting(conn: sqlite3.Connection, key: str, value: str) -> None:
+    conn.execute("INSERT OR REPLACE INTO settings (key, value) VALUES (?,?)", (key, value))
+    conn.commit()

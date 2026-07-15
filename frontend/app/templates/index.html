@@ -1,28 +1,29 @@
 {% extends "base.html" %}
-{% block title %}LibreStreamer &middot; {{ t("index.title") }}{% endblock %}
+{% block title %}{{ branding.site_name }}{% endblock %}
 {% block content %}
-<section class="hero">
-  <h1>{{ t("index.welcome") }}</h1>
-  <p>{% if backend_count == 1 %}{{ t("index.aggregated_one", count=backend_count) }}{% else %}{{ t("index.aggregated_other", count=backend_count) }}{% endif %}</p>
-</section>
+<div class="page-content">
 
 {% if history %}
-<section class="row">
-  <h2>{{ t("index.continue_watching") }}</h2>
-  <div class="scroll-row" id="history-scroll">
+<section class="verticalSection">
+  <div class="sectionTitle">{{ t("index.continue_watching") }}</div>
+  <div class="emby-scroller">
     {% for h in history %}
-    <div class="card" onclick="location.href='/watch/{{ h['id'] }}'">
-      {% if h['has_thumbnail'] %}
-      <div class="thumb wide" style="background-image:url('/api/thumbnail/{{ h['id'] }}')"></div>
-      {% else %}
-      <div class="thumb wide empty">&#127916;</div>
-      {% endif %}
-      <div class="info">
-        <div class="name">{{ h['title'] }}</div>
-        <div class="sub">{{ h['type']|capitalize }}</div>
-        {% if h['duration'] > 0 %}
-        <div class="progress-mini"><span style="width:{{ (h['position'] * 100 / h['duration'])|round }}%"></span></div>
-        {% endif %}
+    <div class="card backdropCard" onclick="location.href='/watch/{{ h['id'] }}'">
+      <div class="cardBox">
+        <div class="cardScalable">
+          <div class="cardPadder-backdrop"></div>
+          <div class="cardImageContainer" {% if h['has_thumbnail'] %}style="background-image:url('/api/thumbnail/{{ h['id'] }}')"{% endif %}>
+            {% if not h['has_thumbnail'] %}<span class="cardDefaultText">&#127916;</span>{% endif %}
+          </div>
+          {% if h['duration'] > 0 %}
+          <div class="progress-mini"><span style="width:{{ (h['position'] * 100 / h['duration'])|round }}%"></span></div>
+          {% endif %}
+          <div class="cardOverlayContainer"><div class="cardOverlayPlayBtn">&#25B6;</div></div>
+        </div>
+        <div class="cardFooter">
+          <div class="cardText">{{ h['title'] }}</div>
+          <div class="cardText cardText-secondary">{{ h['type']|capitalize }}</div>
+        </div>
       </div>
     </div>
     {% endfor %}
@@ -31,19 +32,23 @@
 {% endif %}
 
 {% if recent %}
-<section class="row">
-  <h2>{{ t("index.recently_added") }}</h2>
-  <div class="scroll-row" id="recent-scroll">
+<section class="verticalSection">
+  <div class="sectionTitle">{{ t("index.recently_added") }}</div>
+  <div class="emby-scroller">
     {% for r in recent %}
-    <div class="card" onclick="location.href='/item/{{ r['id'] }}'">
-      {% if r['has_thumbnail'] %}
-      <div class="thumb" style="background-image:url('/api/thumbnail/{{ r['id'] }}')"></div>
-      {% else %}
-      <div class="thumb empty">&#127916;</div>
-      {% endif %}
-      <div class="info">
-        <div class="name">{{ r['title'] }}</div>
-        {% if r['year'] %}<div class="sub">{{ r['year'] }}</div>{% endif %}
+    <div class="card portraitCard" onclick="location.href='/item/{{ r['id'] }}'">
+      <div class="cardBox">
+        <div class="cardScalable">
+          <div class="cardPadder-portrait"></div>
+          <div class="cardImageContainer" {% if r['has_thumbnail'] %}style="background-image:url('/api/thumbnail/{{ r['id'] }}')"{% endif %}>
+            {% if not r['has_thumbnail'] %}<span class="cardDefaultText">&#127916;</span>{% endif %}
+          </div>
+          <div class="cardOverlayContainer"><div class="cardOverlayPlayBtn">&#25B6;</div></div>
+        </div>
+        <div class="cardFooter">
+          <div class="cardText">{{ r['title'] }}</div>
+          {% if r['year'] %}<div class="cardText cardText-secondary">{{ r['year'] }}</div>{% endif %}
+        </div>
       </div>
     </div>
     {% endfor %}
@@ -51,18 +56,20 @@
 </section>
 {% endif %}
 
-<section class="row">
-  <h2>{{ t("index.movies") }} <a href="/library?type=movie" class="see-all">{{ t("index.see_all") }}</a></h2>
-  <div class="card-row" id="movies"></div>
+<section class="verticalSection">
+  <div class="sectionTitle">{{ t("index.latest_movies") }} <a href="/library?type=movie">{{ t("index.see_all") }}</a></div>
+  <div class="itemsContainer" id="movies"></div>
 </section>
 
-<section class="row">
-  <h2>{{ t("index.shows") }} <a href="/library?type=show" class="see-all">{{ t("index.see_all") }}</a></h2>
-  <div class="card-row" id="shows"></div>
+<section class="verticalSection">
+  <div class="sectionTitle">{{ t("index.latest_shows") }} <a href="/library?type=show">{{ t("index.see_all") }}</a></div>
+  <div class="itemsContainer" id="shows"></div>
 </section>
 
-<section class="row">
-  <h2>{{ t("index.backends") }}</h2>
+<section class="verticalSection">
+  <div class="sectionTitle">{{ t("index.backends") }}</div>
   <div id="backends" class="backend-grid"></div>
 </section>
+
+</div>
 {% endblock %}

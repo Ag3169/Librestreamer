@@ -25,7 +25,7 @@ templates = Jinja2Templates(directory=_templates_dir)
 
 
 def _ctx(request: Request, state, **extra) -> dict:
-    """Build template context with i18n + common vars."""
+    """Build template context with i18n + branding + common vars."""
     cookie_lang = request.cookies.get("ls_lang")
     user = getattr(request.state, "user", None)
     user_pref = None
@@ -42,12 +42,15 @@ def _ctx(request: Request, state, **extra) -> dict:
     def t(key: str, **kw) -> str:
         return translate(lang, key, **kw)
 
+    branding = db.get_all_settings(state.conn)
+
     ctx = {
         "request": request,
         "user": user,
         "t": t,
         "lang": lang,
         "languages": languages,
+        "branding": branding,
     }
     ctx.update(extra)
     return ctx
@@ -271,6 +274,55 @@ def get_router(state) -> APIRouter:
                 lines = f.readlines()[-200:]
         return templates.TemplateResponse(request, "admin/logs.html",
             _ctx(request, state, lines=lines))
+
+    # ---- branding / customization ----
+
+    @router.get("/admin/branding", response_class=HTMLResponse)
+    async def admin_branding_page(request: Request):
+        return templates.TemplateResponse(request, "admin/branding.html",
+            _ctx(request, state, msg=request.query_params.get("ok","")))
+
+    @router.post("/admin/branding/save")
+    async def admin_branding_save(request: Request,
+                                  site_name: str = Form(None),
+                                  footer_text: str = Form(None),
+                                  hide_branding: str = Form(None),
+                                  accent_color: str = Form(None),
+                                  accent_color_2: str = Form(None),
+                                  bg_color: str = Form(None),
+                                  bg_color_2: str = Form(None),
+                                  card_color: str = Form(None),
+                                  text_color: str = Form(None),
+                                  custom_css: str = Form(None),
+                                  logo_file: UploadFile = File(None),
+                                  favicon_file: UploadFile = File(None)):
+        if site_name is not None:
+            db.set_setting(state.conn, "site_name", site_name.strip() or "LibreStreamer")
+        db.set_setting(state.conn, "footer_text", footer_text or "")
+        db.set_setting(state.conn, "hide_branding", "true" if hide_branding else "false")
+        if accent_color: db.set_setting(state.conn, "accent_color", accent_color)
+        if accent_color_2: db.set_setting(state.conn, "accent_color_2", accent_color_2)
+        if bg_color: db.set_setting(state.conn, "bg_color", bg_color)
+        if bg_color_2: db.set_setting(state.conn, "bg_color_2", bg_color_2)
+        if card_color: db.set_setting(state.conn, "card_color", card_color)
+        if text_color: db.set_setting(state.conn, "text_color", text_color)
+        if custom_css is not None:
+            db.set_setting(state.conn, "custom_css", custom_css)
+        uploads_dir = os.path.join(state.data_dir, "uploads")
+        os.makedirs(uploads_dir, exist_ok=True)
+        if logo_file and logo_file.filename:
+            ext = os.path.splitext(logo_file.filename)[1]
+            fname = "logo" + ext
+            with open(os.path.join(uploads_dir, fname), "wb") as f:
+                f.write(await logo_file.read())
+            db.set_setting(state.conn, "logo_url", fname)
+        if favicon_file and favicon_file.filename:
+            ext = os.path.splitext(favicon_file.filename)[1]
+            fname = "favicon" + ext
+            with open(os.path.join(uploads_dir, fname), "wb") as f:
+                f.write(await favicon_file.read())
+            db.set_setting(state.conn, "favicon_url", fname)
+        return RedirectResponse(url="/admin/branding?ok=1", status_code=302)
 
     # ---- user preferences ----
 

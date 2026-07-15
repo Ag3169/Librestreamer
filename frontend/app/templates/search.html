@@ -1,9 +1,8 @@
 {% extends "base.html" %}
-{% block title %}LibreStreamer &middot; {{ t("search.title") }}{% endblock %}
+{% block title %}{{ t("search.title") }} &middot; {{ branding.site_name }}{% endblock %}
 {% block content %}
-<section>
-  <h2>{{ t("search.results", query=query) }}</h2>
-
+<div class="page-content">
+  <div class="sectionTitle">{{ t("search.results", query=query) }}</div>
   {% if results %}
   <div class="search-filters">
     <button class="active" onclick="filterResults('')">{{ t("library.all") }}</button>
@@ -12,28 +11,31 @@
     <button onclick="filterResults('episode')">{{ t("nav.episodes") }}</button>
     <button onclick="filterResults('music')">{{ t("nav.music") }}</button>
   </div>
-  <div class="card-row" id="search-grid">
+  <div class="itemsContainer" id="search-grid">
     {% for r in results %}
-    <div class="card search-card" data-type="{{ r['type'] }}" onclick="location.href='/item/{{ r['id'] }}'">
-      {% if r['has_thumbnail'] %}
-      <div class="thumb" style="background-image:url('/api/thumbnail/{{ r['id'] }}')"></div>
-      {% else %}
-      <div class="thumb empty">&#127916;</div>
-      {% endif %}
-      {% if r['type'] %}<div class="card-badge {{ r['type'] }}">{{ r['type'] }}</div>{% endif %}
-      <div class="info">
-        <div class="name">{{ r['title'] }}</div>
-        <div class="sub">{{ r['type']|capitalize }}{% if r['year'] %} &middot; {{ r['year'] }}{% endif %}{% if r['show_name'] %} &middot; {{ r['show_name'] }}{% endif %}</div>
+    <div class="card portraitCard search-card" data-type="{{ r['type'] }}" onclick="location.href='/item/{{ r['id'] }}'">
+      <div class="cardBox">
+        <div class="cardScalable">
+          <div class="cardPadder-portrait"></div>
+          <div class="cardImageContainer" {% if r['has_thumbnail'] %}style="background-image:url('/api/thumbnail/{{ r['id'] }}')"{% endif %}>
+            {% if not r['has_thumbnail'] %}<span class="cardDefaultText">{{ r['title'][:2] }}</span>{% endif %}
+          </div>
+          <div class="cardOverlayContainer"><div class="cardOverlayPlayBtn">&#25B6;</div></div>
+        </div>
+        <div class="cardFooter">
+          <div class="cardText">{{ r['title'] }}</div>
+          <div class="cardText cardText-secondary">{{ r['type']|capitalize }}{% if r['year'] %} &bull; {{ r['year'] }}{% endif %}</div>
+        </div>
       </div>
     </div>
     {% endfor %}
   </div>
   {% else %}
-  <div class="empty-state">
-    <p>{{ t("search.no_results") }}</p>
+  <div class="centerMessage">
+    <h2>{{ t("search.no_results") }}</h2>
   </div>
   {% endif %}
-</section>
+</div>
 <script>
 function filterResults(type) {
   document.querySelectorAll('.search-filters button').forEach(b => b.classList.remove('active'));

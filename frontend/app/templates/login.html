@@ -3,14 +3,32 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
-  <title>{{ t("login.title") }} &middot; LibreStreamer</title>
+  <link rel="icon" type="image/svg+xml" href="{% if branding.logo_url %}/uploads/{{ branding.logo_url }}{% elif branding.favicon_url %}/uploads/{{ branding.favicon_url }}{% else %}/static/favicon.svg{% endif %}">
+  <title>{{ t("login.title") }} &middot; {{ branding.site_name }}</title>
   <link rel="stylesheet" href="/static/css/style.css">
   <link rel="stylesheet" href="/static/css/admin.css">
+  <style id="branding-css">
+  :root{
+    --accent:{{ branding.accent_color }};
+    --accent-2:{{ branding.accent_color_2 }};
+    --bg:{{ branding.bg_color }};
+    --bg-2:{{ branding.bg_color_2 }};
+    --card:{{ branding.card_color }};
+    --text:{{ branding.text_color }};
+    --accent-glow:{{ branding.accent_color }}26;
+  }
+  </style>
+  {% if branding.custom_css %}
+  <style id="custom-css">{{ branding.custom_css|safe }}</style>
+  {% endif %}
 </head>
 <body class="login-page">
   <div class="login-card">
-    <h1>LibreStreamer</h1>
+    {% if branding.logo_url %}
+    <img src="/uploads/{{ branding.logo_url }}" alt="{{ branding.site_name }}" class="login-logo">
+    {% else %}
+    <h1>{{ branding.site_name }}</h1>
+    {% endif %}
     <p class="login-sub">{{ t("login.subtitle") }}</p>
     {% if error %}
     <div class="login-error">{{ error }}</div>
@@ -20,7 +38,9 @@
       <input type="password" name="password" placeholder="{{ t('login.password') }}" required>
       <button type="submit">{{ t("login.signin") }}</button>
     </form>
+    {% if not branding.hide_branding or branding.hide_branding == 'false' %}
     <p class="login-hint">{{ t("login.hint") }}</p>
+    {% endif %}
     <select id="lang-select" class="lang-select lang-login" onchange="changeLang(this.value)">
       {% for code, name in languages %}
       <option value="{{ code }}" {{ 'selected' if code == lang else '' }}>{{ name }}</option>

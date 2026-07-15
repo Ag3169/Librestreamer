@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}LibreStreamer &middot; {{ t("player.title") }}{% endblock %}
+{% block title %}{{ item['title'] }} &middot; {{ branding.site_name }}{% endblock %}
 {% block content %}
-<section class="player-wrap">
+<div class="player-wrap">
   <a href="/item/{{ item['id'] }}" class="back">&larr; {{ t("player.back") }}</a>
-  <h1>{{ item['title'] }}</h1>
+  <h1 class="itemName" style="font-size:1.5em">{{ item['title'] }}</h1>
   {% if item['show_name'] and item['type'] == 'episode' %}
-  <p class="muted" style="margin:4px 0 12px">{{ item['show_name'] }} &middot; S{{ '%02d'|format(item['season']) }}E{{ '%02d'|format(item['episode']) }}</p>
+  <div class="itemMiscInfo">{{ item['show_name'] }} &bull; S{{ '%02d'|format(item['season']) }}E{{ '%02d'|format(item['episode']) }}</div>
   {% endif %}
   <div class="player-box">
     {% if item['type'] == 'music' %}
@@ -19,14 +19,10 @@
   <div class="stream-status">
     <span class="status-dot"></span>
     <span id="stream-status-text">{{ t("player.playing") }}</span>
-    {% if item['resolution'] %}<span>&middot; {{ item['resolution'] }}</span>{% endif %}
-    {% if item['codec'] %}<span>&middot; {{ item['codec'] }}</span>{% endif %}
-    {% if item['duration'] %}<span>&middot; {{ (item['duration'] / 60)|round(0) }} min</span>{% endif %}
-    <span class="spacer" style="flex:1"></span>
-    <button class="btn-icon" onclick="toggleFs()" style="width:32px;height:32px;font-size:14px">&#26F6;</button>
+    {% if item['resolution'] %}<span>&bull; {{ item['resolution'] }}</span>{% endif %}
+    {% if item['duration'] %}<span>&bull; {{ (item['duration'] / 60)|round(0) }} min</span>{% endif %}
   </div>
-</section>
-{% endblock %}
+</div>
 {% block scripts %}
 <script>
 (function(){
@@ -35,20 +31,13 @@
   const itemId = {{ item['id']|tojson }};
   let lastReport = 0;
   if (!p) return;
-
   function report(finished) {
     const now = Date.now();
     if (!finished && now - lastReport < 5000) return;
     lastReport = now;
     fetch('/api/progress', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        item_id: itemId,
-        position: Math.floor(p.currentTime || 0),
-        duration: Math.floor(p.duration || 0),
-        finished: finished || false,
-      })
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({item_id: itemId, position: Math.floor(p.currentTime||0), duration: Math.floor(p.duration||0), finished: finished||false})
     });
   }
   p.addEventListener('timeupdate', () => report(false));
@@ -57,7 +46,6 @@
   p.addEventListener('error', () => { if(s) s.textContent = '{{ t("player.stream_error") }}'; });
   p.addEventListener('playing', () => { if(s) s.textContent = '{{ t("player.playing") }}'; });
   p.addEventListener('waiting', () => { if(s) s.textContent = '{{ t("player.buffering") }}'; });
-
   document.addEventListener('keydown', (e) => {
     if (!p || e.target.tagName === 'INPUT') return;
     if (e.code === 'Space') { e.preventDefault(); p.paused ? p.play() : p.pause(); }
@@ -66,11 +54,11 @@
     if (e.code === 'KeyF') { toggleFs(); }
   });
 })();
-
 function toggleFs() {
   const p = document.getElementById('player');
   if (!document.fullscreenElement) p.requestFullscreen?.();
   else document.exitFullscreen?.();
 }
 </script>
+{% endblock %}
 {% endblock %}
